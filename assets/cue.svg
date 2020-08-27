@@ -14,8 +14,11 @@
    viewBox="0 0 203.2 203.2"
    version="1.1"
    id="svg8"
-   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
-   sodipodi:docname="circle.svg">
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="cue.svg"
+   inkscape:export-filename="/home/dan/git/mid-psychopy/assets/triangle.png"
+   inkscape:export-xdpi="250"
+   inkscape:export-ydpi="250">
   <defs
      id="defs2" />
   <sodipodi:namedview
@@ -25,15 +28,15 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4"
-     inkscape:cx="258.07091"
-     inkscape:cy="330.32472"
+     inkscape:zoom="1"
+     inkscape:cx="142.71377"
+     inkscape:cy="327.46758"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer5"
+     inkscape:current-layer="layer1"
      showgrid="false"
      units="in"
-     inkscape:window-width="3840"
-     inkscape:window-height="2134"
+     inkscape:window-width="1366"
+     inkscape:window-height="722"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -65,14 +68,15 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
      inkscape:groupmode="layer"
      id="layer5"
-     inkscape:label="Triangle">
+     inkscape:label="Triangle"
+     style="display:none">
     <path
        sodipodi:type="star"
        style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:7.61999989;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
@@ -87,7 +91,7 @@
        inkscape:flatsided="false"
        inkscape:rounded="0"
        inkscape:randomized="0"
-       d="m 182.69884,173.73866 -81.09884,0 -81.09884,0 L 61.050579,103.505 101.6,33.271344 142.14942,103.505 Z"
+       d="m 182.69884,173.73866 -81.09884,0 -81.098842,0 L 61.050578,103.505 101.6,33.271347 142.14942,103.505 Z"
        inkscape:transform-center-x="1.28e-06"
        inkscape:transform-center-y="-23.411219" />
   </g>
@@ -96,7 +100,7 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(0,-93.79998)"
-     style="display:inline">
+     style="display:none">
     <circle
        style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:7.61999989;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path4545"
@@ -131,7 +135,8 @@
   <g
      inkscape:groupmode="layer"
      id="layer3"
-     inkscape:label="Two">
+     inkscape:label="Two"
+     style="display:none">
     <path
        style="fill:none;stroke:#ffffff;stroke-width:7.48191357;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="M 20.316218,76.559075 H 182.65699"
