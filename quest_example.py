@@ -17,6 +17,9 @@ staircase = data.QuestHandler(0.5, 0.2, pThreshold=0.63, gamma=0.01,
 orientations = [-45, 45]
 responses = ['left', 'right']
 
+print('init complete')
+
+
 for contrast in staircase:
     keys = []
     # randomise orientation for this trial
