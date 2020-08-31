@@ -7,7 +7,6 @@ Presentation times vary based on a staircase procedure calibrated to reach 66% p
 
 Based on code originally written by @nivreggev, see README
 """
-from __future__ import division
 from psychopy import gui, visual, core, data, event, logging, monitors
 from psychopy.constants import (NOT_STARTED, STARTED, PLAYING, PAUSED,
                                 STOPPED, FINISHED, PRESSED, RELEASED, FOREVER)
@@ -23,16 +22,16 @@ import sys  # to get file system encoding
 
 ## setting up some user-defined variables
 
+DEBUG = True
 expName = "MID"
 version = "1.0"
 data_dir = "data" # location of outputs to be generated; includes data for participants as well as trial selection and trial presentation sequence
 inst_dir = "text" # location of instructions directory
 inst_file = ["instructions_MID.txt"] # name of instructions files (needs to be .txt)
-trials_file = "trials.csv" # name of external file determining allocation of trials
-study_times = [0.5,2,0.5,0.5,0.5] # duration of different parts of the task trials, in seconds: cue, delay, target, feedback, lastfixation
-initial_fix_dur = 8 # added time to make sure homogenicity of magnetic field is reached
+initial_fix_duration = 8 # added time to make sure homogenicity of magnetic field is reached
 closing_fix_dur = 10 # added time to make sure haemodynamic responses of the last trials are properly modeled 
 min_target_dur = 0.16 # sets the minimum presentation time for target (in seconds)
+cue_time = 2.0
 
 # settings for fMRI emulation:
 MR_settings = {
@@ -119,8 +118,6 @@ def display_inst(instr_part,task,forwardKey,backKey,startKey,instructFinish):
             instructMove.draw()
             win.flip()
             instructRep = event.waitKeys(keyList=[forwardKey, backKey])
-        if event.getKeys(keyList=[endKey]):
-            core.quit()       
         if instructRep[0] == backKey:
             instructLine -= 1
         elif instructRep[0] == forwardKey:
@@ -152,8 +149,6 @@ exp = data.ExperimentHandler(name=expName, version=version, extraInfo=expInfo, r
 logFile = logging.LogFile(filename+'.log', level=logging.EXP)
 logging.console.setLevel(logging.WARNING)  # this outputs to the screen, not a file
 
-endExpNow = False  # flag for 'escape' or other condition => quit the exp
-
 # Setup the window and presentation constants
 [win_res, win] = make_screen()
 yScr = 1.
@@ -178,7 +173,6 @@ if fmri:
     backKey = "6"
     startKey = "0"
     expKeys = ["6","7","8","9","0","1","2","3","4"] # including all response button keys to catch misaligned fingers/responses
-    endKey = "l"
     # Initialize components for Routine "instructions"
     instructFirst = visual.TextStim(win, text="Press 7 to continue.", height=fontH, color=textCol, pos=[0, -yScr/4])
     instructMove = visual.TextStim(win, text="Press 7 to continue, or 6 to go back.", height=fontH, color=textCol, pos=[0, -yScr/4])
@@ -187,7 +181,6 @@ else:
     backKey = "3"
     startKey = "0"
     expKeys = ["1", "2", "3", "4", "5", "6"] 
-    endKey = "l"
     # Initialize components for Routine "instructions"
     instructFirst = visual.TextStim(win, text="Press 4 to continue.", height=fontH, color=textCol, pos=[0, -yScr/4])
     instructMove = visual.TextStim(win, text="Press 4 to continue, or 3 to go back.", height=fontH, color=textCol, pos=[0, -yScr/4])
@@ -210,7 +203,7 @@ for inst in range (0,len(inst_file)):
 
 #create fixation stimulus
 fix = visual.TextStim(win, pos=[0, 0], text='+', height=fontH*2, color=textCol)
-FixClock = core.Clock()
+clock = core.Clock()
 
 # Initialize components for Routine "instructions"
 instructPrompt = visual.TextStim(win=win, font='Arial', pos=(0, yScr/10), height=fontH, wrapWidth=wrapW, color=textCol);
@@ -223,10 +216,15 @@ wait_str = "The task will begin momentarily. Get ready..."
 endf = visual.TextStim(win, pos=[0, 0], text="Thank you. This part of the experiment is now complete.",wrapWidth=wrapW, height=fontH, color=textCol)                                     
 
 # Initialize components for Routine "cue" 
-
-Cue = visual.Circle(win,radius=0.2, edges=128,lineWidth=0, pos=(0, 0))
+# TODO: Real image cues
+cues = {
+    'reward.low': visual.Circle(win,radius=0.2, edges=128, fillColor="green", lineWidth=0, pos=(0, 0)),
+    'reward.high': visual.Circle(win,radius=0.2, edges=128, fillColor="blue", lineWidth=0, pos=(0, 0)),
+    'neutral': visual.Circle(win,radius=0.2, edges=128, fillColor="white", lineWidth=0, pos=(0, 0)),
+    'loss.low': visual.Circle(win,radius=0.2, edges=128, fillColor="yellow", lineWidth=0, pos=(0, 0)),
+    'loss.high': visual.Circle(win,radius=0.2, edges=128, fillColor="red", lineWidth=0, pos=(0, 0)),
+}
 CueClock = core.Clock()
-Cue_trials_template = _thisDir + os.sep + trials_file
 
 # Initialize components for Routine "Target"
 TargetClock = core.Clock()
@@ -234,19 +232,19 @@ Target = visual.Rect(win,width=0.5, height=0.5, fillColor = "white", lineWidth=0
 
 # Initialize components for Routine "Feedback"
 FeedbackClock = core.Clock()
-Trial_FB = visual.TextStim(win=win, name='Trial_FB',text='Trial earnings:',font='Arial',pos=(0, yScr/6), height=fontH+yScr/30, wrapWidth=None, ori=0, 
+trial_feedback = visual.TextStim(win=win, name='trial_feedback',text='Trial:',font='Arial',pos=(0, yScr/6), height=fontH+yScr/30, wrapWidth=None, ori=0, 
     color='Orange', colorSpace='rgb', opacity=1);
-Exp_FB = visual.TextStim(win=win, name='Exp_FB',text='Total earnings:',font='Arial',pos=(0, -yScr/20), height=fontH+yScr/30, wrapWidth=None, ori=0, 
+exp_feedback = visual.TextStim(win=win, name='exp_feedback',text='Total:',font='Arial',pos=(0, -yScr/20), height=fontH+yScr/30, wrapWidth=None, ori=0, 
     color='Aqua', colorSpace='rgb', opacity=1);
-Blank_FB_Rectangle = visual.ImageStim(win=win, name='Blank_FB', mask=None,ori=0, pos=(0, 0), size=(xScr/8, xScr/8),texRes=128, interpolate=True)
+Blank_FB_Rectangle = visual.ImageStim(win=win, name='Blank_FB', mask=None, ori=0, pos=(0, 0), size=(xScr/8, xScr/8),texRes=128, interpolate=True)
 
 # Create some handy timers
 globalClock = core.Clock()  # to track the time since experiment started
 routineTimer = core.CountdownTimer()  # to track time remaining of each (non-slip) routine 
 
-# create content to be displayed
-stimuli = pd.read_csv(Cue_trials_template) # read template stimuli
-stimuli = stimuli.reindex(np.random.permutation(stimuli.index)) # shuffle order of stimuli
+# load trial order
+# TODO: pick a random one, seeded by subject id
+order = pd.read_csv(os.path.join(_thisDir, 'orders', '1034.csv')) # read template stimuli
 
 ## Displaying Instructions
 
@@ -274,150 +272,58 @@ else:
     win.flip()
     event.waitKeys(keyList=['equal'])
     
-# set up counters for trials (to determine cue stimulus and for total earnings)
+# set up counters for trials (to determine stimulus and for total earnings)
 trial_counter = 0
-Tot_Earn = 0
+total_earnings = 0
 
 # create the staircase handler to adjust for individual threshold (stairs defined in units of screen frames; actual minimum presentation duration is determined by the min_target_dur parameter, the staircase procedure can only add frame rates to that minimum value)
 trials = data.StairHandler(startVal=13.0,
     stepType='lin',
     stepSizes=[6, 3, 3, 2, 2, 1, 1],  # reduce step size every two reversals
-    minVal=0, maxVal=15,
+    minVal=0, maxVal=20,
     nUp=1,
     nDown=2, # will home in on the 66% threshold (nUp=1, nDown=3 homes in on 80%)
-    nTrials=45,extraInfo=expInfo)
+    nTrials=30,
+    extraInfo=expInfo)
     
 exp.addLoop(trials) # add the loop to the experiment
-nominalTime = 0 # set up virtual time keeper to align actual with a-priori time allocation
 globalClock.reset() # to align actual time with virtual time keeper
     
+def show_stim(stim, duration):
+    t_start = globalClock.getTime()
+    t = t_start
+    while t < t_start + duration:
+        t = globalClock.getTime()
+        stim.draw()
+        win.flip()              
+
+def show_fixation(duration):
+    t_start = globalClock.getTime()
+    t = t_start
+    while t < t_start + duration:
+        t = globalClock.getTime()
+        fix.draw()
+        win.flip()              
+
 # present initial fixation
-t_start = globalClock.getTime()
-t = t_start
-while t < t_start + initial_fix_dur:
-    t = globalClock.getTime()
-    fix.draw()
-    win.flip()              
-nominalTime = t # set up virtual time keeper to align actual with a-priori time allocation
+show_fixation(initial_fix_duration)
 
-for thisTrial in trials:
+
+for trial_duration in trials:
     trials.addOtherData('time.onset', globalClock.getTime()) # add trial onset time to the data file
-    currentLoop = trials
         
-    # update component parameters for each repeat
-    Choice_Resp = event.BuilderKeyResponse()
-    CueColor = stimuli.iloc[trial_counter][0] # get cue color from the externally imported stimuli list, based on trial_counter
-    trials.addOtherData('cue.color', CueColor) # add trial onset time to the data file
+    trial_details = order.iloc[trial_counter]
+    trial_type = trial_details['trial.type']
+    if DEBUG:
+        print('trial.type: ', trial_type)
 
-    Cue.fillColor = CueColor
     trial_counter += 1
     
-    # ------Prepare to start Routine "Cue"-------
-    t = 0
-    CueClock.reset()  # clock
-    # reset the non-slip timer for next routine
-    routineTimer.reset()                
-    continueRoutine = True
-    routineTimer.add(study_times[0]) # set time limit for current phase
-    nominalTime += study_times[0] # update nominal time keeper
+    cue = cues[trial_type]
     
-    # keep track of which components have finished
-    CueComponents = [Cue]
-    for thisComponent in CueComponents:
-        if hasattr(thisComponent, 'status'):
-            thisComponent.status = NOT_STARTED
+    show_stim(cue, cue_time)
     
-    # -------Start Routine "Cue"-------
-    while continueRoutine and routineTimer.getTime() > 0:
-        # get current time
-        t = CueClock.getTime()
-        
-        # first screen updates
-        if t >= 0.0 and Cue.status == NOT_STARTED:
-            # keep track of start time/frame for later
-            Cue.tStart = t
-            Cue.setAutoDraw(True)
-        frameRemains = 0.0 + study_times[0] - win.monitorFramePeriod * 0.75  # most of one frame period left
-        if Cue.status == STARTED and t >= frameRemains:
-            Cue.setAutoDraw(False)
-
-        # check if all components have finished
-        if not continueRoutine:  # a component has requested a forced-end of Routine
-            break
-        continueRoutine = False  # will revert to True if at least one component still running
-        for thisComponent in CueComponents:
-            if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
-                continueRoutine = True
-                break  # at least one component has not yet finished
-        
-        # check for quit (the Esc key)
-        if endExpNow or event.getKeys(keyList=[endKey]):
-            core.quit()
-        
-        # refresh the screen
-        if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
-            win.flip()
-    
-    # -------Ending Routine "Choice"-------
-    for thisComponent in CueComponents:
-        if hasattr(thisComponent, "setAutoDraw"):
-            thisComponent.setAutoDraw(False)
-
-    # ------Prepare to start Routine "fix"-------
-    t = 0
-    FixClock.reset()  # clock    
-    # reset the non-slip timer for next routine
-    routineTimer.reset()   
-    continueRoutine = True
-    
-    # set fixation time duration 
-    fix_add = random.uniform(0,0.5) # add a random duration (range in parentheses) to fixation
-    fix_time = study_times[1] + fix_add
-    nominalTime += fix_time
-    routineTimer.add(fix_time)
-    
-    # keep track of which components have finished
-    fixComponents = [fix]
-    for thisComponent in fixComponents:
-        if hasattr(thisComponent, 'status'):
-            thisComponent.status = NOT_STARTED
-    
-    # -------Start Routine "fix"-------
-    while continueRoutine and routineTimer.getTime() > 0:
-        
-        # get current time
-        t = FixClock.getTime()
-                
-        # fix updates
-        if t >= 0 and fix.status == NOT_STARTED:
-            # keep track of start time/frame for later
-            fix.tStart = t
-            fix.setAutoDraw(True)
-        frameRemains = 0.0 + fix_time - win.monitorFramePeriod * 0.75  # most of one frame period left
-        if fix.status == STARTED and t >= frameRemains:
-            fix.setAutoDraw(False)
-        
-        # check if all components have finished
-        if not continueRoutine:  # a component has requested a forced-end of Routine
-            break
-        continueRoutine = False  # will revert to True if at least one component still running
-        for thisComponent in fixComponents:
-            if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
-                continueRoutine = True
-                break  # at least one component has not yet finished
-        
-        # check for quit (the Esc key)
-        if endExpNow or event.getKeys(keyList=[endKey]):
-            core.quit()
-        
-        # refresh the screen
-        if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
-            win.flip()
-    
-    # -------Ending Routine "fix"-------
-    for thisComponent in fixComponents:
-        if hasattr(thisComponent, "setAutoDraw"):
-            thisComponent.setAutoDraw(False)    
+    show_fixation(trial_details['fix.after.cue'])
     
     # ------Prepare to start Routine "Target"-------
     t = 0
@@ -426,14 +332,15 @@ for thisTrial in trials:
     # reset the non-slip timer for next routine
     routineTimer.reset()                   
     continueRoutine = True
-    routineTimer.add(study_times[2])
-    nominalTime += study_times[2]
+    # Maximum time allowed for target response
+    routineTimer.add(0.5)
 
     # update component parameters for each repeat
-    Target_Resp = event.BuilderKeyResponse()
+    target_response = event.BuilderKeyResponse()
+    trial_response = 0
     
     # keep track of which components have finished
-    TargetComponents = [Target, Target_Resp]
+    TargetComponents = [Target, target_response]
     for thisComponent in TargetComponents:
         if hasattr(thisComponent, 'status'):
             thisComponent.status = NOT_STARTED
@@ -450,26 +357,26 @@ for thisTrial in trials:
             # display target 
             Target.setAutoDraw(True)
             # open response options
-            Target_Resp.tStart = t
-            Target_Resp.status = STARTED
+            target_response.tStart = t
+            target_response.status = STARTED
             # keyboard checking is just starting
-            win.callOnFlip(Target_Resp.clock.reset)  # t=0 on next screen flip
+            win.callOnFlip(target_response.clock.reset)  # t=0 on next screen flip
             event.clearEvents(eventType='keyboard')  
             theseKeys = []
 
-        frameRemainsResp = min_target_dur + frameDur*thisTrial #- win.monitorFramePeriod * 0.75  # most of one frame period left;  range: min_target_dur (160ms) to one frame (~17ms, depends on refresh rate) * 6
+        frameRemainsResp = min_target_dur + frameDur * trial_duration
         if Target.status == STARTED and t >= frameRemainsResp:
-            print('thisTrial:',thisTrial) # print for QA purpose
-            print('frameDur:',frameDur) # print for QA purpose
-            print('frameRemainsResp:',frameRemainsResp) # print for QA purpose
+            if DEBUG:
+                print('trial_duration:',trial_duration)
+                print('frameDur:',frameDur)
+                print('frameRemainsResp:',frameRemainsResp)
             
             Target.setAutoDraw(False)
             theseKeys = event.getKeys(keyList=expKeys)
-            ThisResp = 0 # set response to no response - change only if response was given in the allowed time frame
             
             if len(theseKeys) > 0:  # at least one key was pressed
-                ThisResp = 1
-                Target_Resp.rt = Target_Resp.clock.getTime()
+                trial_response = 1
+                target_response.rt = target_response.clock.getTime()
            
         # check if all components have finished
         if not continueRoutine:  # a component has requested a forced-end of Routine
@@ -480,12 +387,8 @@ for thisTrial in trials:
                 continueRoutine = True
                 break  # at least one component has not yet finished
         
-        # check for quit (the Esc key)
-        if endExpNow or event.getKeys(keyList=[endKey]):
-            core.quit()
-        
         # refresh the screen
-        if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
+        if continueRoutine: # don't flip if this routine is over or we'll get a blank screen
             win.flip()
     
     # -------Ending Routine "Target"-------
@@ -494,12 +397,36 @@ for thisTrial in trials:
             thisComponent.setAutoDraw(False)
     
     # add the data to the staircase so it can be used to calculate the next level
-    trials.addResponse(ThisResp)
+    trials.addResponse(trial_response)
 
     # check responses to add RT
-    if ThisResp:  # we had a response
-        trials.addOtherData('Target_Resp.rt', Target_Resp.rt)
+    if trial_response: # we had a response
+        trials.addOtherData('target_response.rt', target_response.rt)
     
+    reward = 0
+
+    # update trial components
+    if trial_type == 'reward.high':
+        if trial_response:
+            reward = 2
+    elif trial_type == 'reward.low':
+        if trial_response:
+            reward = 1
+    elif trial_type == 'loss.high':
+        if not trial_response:
+            reward = -2
+    elif trial_type == 'loss.low':
+        if not trial_response:
+            reward = -1
+
+    newText = 'Trial earnings: ${reward}'
+    trials.addOtherData('trial.reward', reward)
+
+    total_earnings += reward
+
+    # Fixation after stim target 
+    show_fixation(trial_details['fix.after.stim'])
+
     # ------Prepare to start Routine "Feedback"-------
     t = 0
     FeedbackClock.reset()  # clock
@@ -507,25 +434,15 @@ for thisTrial in trials:
     routineTimer.reset()                   
     continueRoutine = True
     routineTimer.add(study_times[3])
-    nominalTime += study_times[3]
-    
-    # וupdate trial components
-    if ThisResp and CueColor=='Green': # if it was a rewarded trial and a response was given
-        Tot_Earn += 1
-        newText = 'Trial earnings: $1'
-        trials.addOtherData('Trial.rewardType', '1')
-    else:    
-        newText = 'Trial earnings: $0'
-        trials.addOtherData('Trial.rewardType', '-1')
-    Trial_FB.setText(newText)
-    newText = 'Total earnings: $' + str(Tot_Earn)
-    Exp_FB.setText(newText)
+
+    trial_feedback.setText(newText)
+    newText = 'Total earnings: $' + str(total_earnings)
+    exp_feedback.setText(newText)
         
-    # add to be presented stimuli to output
-    trials.addOtherData('Total_Earned', Tot_Earn) 
+    trials.addOtherData('Total_Earned', total_earnings) 
              
     # keep track of which components have finished
-    FeedbackComponents = [Trial_FB, Exp_FB]
+    FeedbackComponents = [trial_feedback, exp_feedback]
     for thisComponent in FeedbackComponents:
         if hasattr(thisComponent, 'status'):
             thisComponent.status = NOT_STARTED
@@ -536,15 +453,15 @@ for thisTrial in trials:
         t = FeedbackClock.getTime()
         
         # feedback screen updates
-        if t >= 0.0 and Trial_FB.status == NOT_STARTED:
+        if t >= 0.0 and trial_feedback.status == NOT_STARTED:
             # keep track of start time/frame for later
-            Trial_FB.tStart = t
-            Trial_FB.setAutoDraw(True)
-            Exp_FB.setAutoDraw(True)
+            trial_feedback.tStart = t
+            trial_feedback.setAutoDraw(True)
+            exp_feedback.setAutoDraw(True)
         frameRemains = 0.0 + study_times[3] - win.monitorFramePeriod * 0.75  # most of one frame period left
-        if Trial_FB.status == STARTED and t >= frameRemains:
-            Trial_FB.setAutoDraw(False)
-            Exp_FB.setAutoDraw(False)
+        if trial_feedback.status == STARTED and t >= frameRemains:
+            trial_feedback.setAutoDraw(False)
+            exp_feedback.setAutoDraw(False)
 
         # check if all components have finished
         if not continueRoutine:  # a component has requested a forced-end of Routine
@@ -555,10 +472,6 @@ for thisTrial in trials:
                 continueRoutine = True
                 break  # at least one component has not yet finished
         
-        # check for quit (the Esc key)
-        if endExpNow or event.getKeys(keyList=[endKey]):
-            core.quit()
-        
         # refresh the screen
         if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
             win.flip()
@@ -568,82 +481,29 @@ for thisTrial in trials:
         if hasattr(thisComponent, "setAutoDraw"):
             thisComponent.setAutoDraw(False)
 
-    # ------Prepare to start Routine "fix"-------
-    t = 0
-    FixClock.reset()  # clock    
-    # reset the non-slip timer for next routine
-    routineTimer.reset()   
-    continueRoutine = True
-    
-    # set fixation time duration 
-    tend = globalClock.getTime() #CueClock.getTime() # actual ending time for trial presentation
-    tcor = tend-nominalTime # difference between actual elapsed time and pre-allocated time
-    fix_add = study_times[4]
-    fix_time = fix_add - tcor # calculate fix time to correct for time drifts
-    nominalTime += study_times[4]
-    routineTimer.add(fix_time)
-    
-    # keep track of which components have finished
-    fixComponents = [fix]
-    for thisComponent in fixComponents:
-        if hasattr(thisComponent, 'status'):
-            thisComponent.status = NOT_STARTED
-    
-    # -------Start Routine "fix"-------
-    while continueRoutine and routineTimer.getTime() > 0:
-        
-        # get current time
-        t = FixClock.getTime()
-            
-        # fix updates
-        if t >= 0.0 and fix.status == NOT_STARTED:
-            # keep track of start time/frame for later
-            fix.tStart = t
-            fix.setAutoDraw(True)
-        frameRemains = 0.0 + fix_time - win.monitorFramePeriod * 0.75  # most of one frame period left
-        if fix.status == STARTED and t >= frameRemains:
-            fix.setAutoDraw(False)
-        
-        # check if all components have finished
-        if not continueRoutine:  # a component has requested a forced-end of Routine
-            break
-        continueRoutine = False  # will revert to True if at least one component still running
-        for thisComponent in fixComponents:
-            if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
-                continueRoutine = True
-                break  # at least one component has not yet finished
-        
-        # check for quit (the Esc key)
-        if endExpNow or event.getKeys(keyList=[endKey]):
-            core.quit()
-        
-        # refresh the screen
-        if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
-            win.flip()
-    
-    # -------Ending Routine "fix"-------
-    for thisComponent in fixComponents:
-        if hasattr(thisComponent, "setAutoDraw"):
-            thisComponent.setAutoDraw(False)    
+    # Fixation after stim target 
+    # TODO: Here we need to look at Jeanettes notes,
+    # we want this to be altered so that the length
+    # of all trial runs is the same (so it depends on
+    # the response time above)
+    show_fixation(trial_details['fix.after.feedback'])
     
     # add data to log file
     trials.addOtherData('time.global', globalClock.getTime())      
-    trials.addOtherData('time.nominal', nominalTime)      
-    trials.addOtherData('time.trial', CueClock.getTime())
-    trials.addOtherData('time.plannedfixlength', fix_time)
-    trials.addOtherData('time.actualfixlength', globalClock.getTime() - tend)
+    def add_detail(x):
+        trials.addOtherData(x, trial_details[x])
+    add_detail('fix.after.cue')
+    add_detail('fix.after.stim')
+    add_detail('fix.after.feedback')
+    add_detail('trial.type')
                 
     # advance to next trial/line in logFile
     exp.nextEntry()
 
 # completed experiment
 # present ending fixation (to allow for better evaluation of the last experimental TRs)
-t_end = globalClock.getTime()
-t = t_end
-while t < t_end + closing_fix_dur:
-    t = globalClock.getTime()
-    fix.draw()
-    win.flip()      
+
+show_fixation(closing_fix_dur)
 
 # completed experimental phase
 
@@ -652,13 +512,7 @@ endf.draw()
 win.flip()
 event.waitKeys(keyList=['0'])
 
-# TODO: disable this?
-# these shouldn't be strictly necessary (should auto-save)
-exp.saveAsWideText(filename+'.csv',fileCollisionMethod = 'overwrite')
-exp.saveAsPickle(filename, fileCollisionMethod = 'rename')
 logging.flush()
 
-# make sure everything is closed down
-exp.abort()  # or data files will save again on exit
 win.close()
 core.quit()
