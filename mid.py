@@ -17,11 +17,10 @@ from psychopy import gui, visual, core, data, event, logging, monitors
 from psychopy.constants import (NOT_STARTED, STARTED, PLAYING, PAUSED,
                                 STOPPED, FINISHED, PRESSED, RELEASED, FOREVER)
 from psychopy.hardware.emulator import launchScan
-import numpy as np
-import pandas as pd
 from numpy.random import random, shuffle
 import random
 import os
+import csv
 from pathlib import Path
 
 ## setting up some user-defined variables
@@ -35,7 +34,7 @@ inst_file = ["instructions_MID.txt"] # name of instructions files (needs to be .
 
 num_runs = 3
 # Trials per run
-num_trials = 30
+num_trials = 2
 
 reward_high = 7
 reward_low = 1
@@ -187,20 +186,13 @@ else:
 random.seed(sn * (session + 1000))
 
 # determine accepted inputs
-if fmri:
-    forwardKey = "7"
-    backKey = "6"
-    startKeys = ["enter","equal","return"]
-    expKeys = ["6","7","8","9","0","1","2","3","4"]
-    instructFirst = visual.TextStim(win, text="Press 7 to continue.", height=fontH, color=text_color, pos=[0, -yScr/4])
-    instructMove = visual.TextStim(win, text="Press 7 to continue, or 6 to go back.", height=fontH, color=text_color, pos=[0, -yScr/4])
-else:
-    forwardKey = "4"
-    backKey = "3"
-    startKeys = ["enter","return"]
-    expKeys = ["1","2","3","4","5","6"]
-    instructFirst = visual.TextStim(win, text="Press 4 to continue.", height=fontH, color=text_color, pos=[0, -yScr/4])
-    instructMove = visual.TextStim(win, text="Press 4 to continue, or 3 to go back.", height=fontH, color=text_color, pos=[0, -yScr/4])
+forwardKey = "2"
+backKey = "1"
+startKeys = ["enter","equal","return"]
+expKeys = ["1","2","3","4","5","6","7","8","9"]
+
+instructFirst = visual.TextStim(win, text=f"Press {forwardKey} to continue.", height=fontH, color=text_color, pos=[0, -yScr/4])
+instructMove = visual.TextStim(win, text=f"Press {forwardKey} to continue, or {backKey} to go back.", height=fontH, color=text_color, pos=[0, -yScr/4])
 
 # import instructions
 instr_part = [[],[],[]]
@@ -298,7 +290,7 @@ exp.addLoop(trials) # add the staircaser to the experiment
 def show_stim(stim, duration):
     t_start = globalClock.getTime()
     t = t_start
-    while t < t_start + duration:
+    while t < t_start + float(duration):
         t = globalClock.getTime()
         if stim:
             stim.draw()
@@ -308,44 +300,39 @@ def show_fixation(duration):
     show_stim(fix, duration)
 
 
-if DEBUG:
-    print("waiting for TR")
-
-# Wait for TR signal if in scanner
-if fmri:
-    wait.draw()
-    win.flip()
-    event.waitKeys(keyList=startKeys)
-else:
-    # launch: operator selects Scan or Test (emulate); see API docuwmentation
-    vol = launchScan(win, MR_settings, globalClock=globalClock, wait_msg=wait_str)
-
-if DEBUG:
-    print("preparing")
-
 # EXPERIMENT BEGINS
-
-globalClock.reset() # to align actual time with virtual time keeper
-if DEBUG:
-    print("actual start {globalClock.getTime()}")
-
-# present initial fixation
-show_fixation(initial_fix_duration)
 
 # Loop the rest of this for num_runs
 for run in range(0, num_runs):
+    order_file = order_files[run]
+    order = csv.DictReader(open(order_file))
+    order = list(order)
+    trials.addOtherData('run.order.file', order_file)
+    if DEBUG:
+        print(f'order_file is {order_file}')
+
+    # Wait for TR signal if in scanner
+    if fmri:
+        if DEBUG:
+            print("waiting for TR")
+        wait.draw()
+        win.flip()
+        event.waitKeys(keyList=startKeys)
+    elif run == 0:
+        # launch: operator selects Scan or Test (emulate); see API docuwmentation
+        vol = launchScan(win, MR_settings, globalClock=globalClock, wait_msg=wait_str)
+
+    globalClock.reset() # to align actual time with virtual time keeper
+    if DEBUG:
+        print("actual start {globalClock.getTime()}")
+
     runClock.reset()
     if DEBUG:
         print(f'run {run + 1} of {num_runs}')
 
-    order_file = order_files[run]
-    order = pd.read_csv(order_file)
-    # For some reason we need to access order
-    temp = list(order)
-    trials.addOtherData('run.order.file', order_file)
-
-    if DEBUG:
-        print(f'order_file is {order_file}')
+    # present initial fixation on the first run
+    if run == 0:
+        show_fixation(initial_fix_duration)
 
     for trial in range(0, num_trials):
         if DEBUG:
@@ -357,7 +344,7 @@ for run in range(0, num_runs):
 
         trials.addOtherData('time.onset', globalClock.getTime()) # add trial onset time to the data file
 
-        trial_details = order.iloc[trial_counter]
+        trial_details = order[trial_counter]
         trial_type = trial_details['trial.type']
 
         def log_detail(x):
@@ -398,7 +385,7 @@ for run in range(0, num_runs):
         # update component parameters for each repeat
         target_response = event.BuilderKeyResponse()
         trial_response = 0
-        rt = 0
+        rt = None
 
         # keep track of which components have finished
         TargetComponents = [Target, target_response]
@@ -465,7 +452,7 @@ for run in range(0, num_runs):
         trials.addResponse(trial_response)
 
         # check responses to add RT
-        if trial_response: # we had a response
+        if trial_response:
             trials.addOtherData('target_response.rt', target_response.rt)
 
         reward = 0
@@ -564,8 +551,11 @@ for run in range(0, num_runs):
         # of the trial is adjusted by the stim difference from 0.5s...
 
         trial_time = trialClock.getTime()
-        difference_between_rt_and_original = max_target_dur - rt
-        fix_after_feedback_adjusted = trial_details['fix.after.feedback'] + difference_between_rt_and_original
+        fix_after_feedback_adjusted = float(trial_details['fix.after.feedback'])
+        if rt:
+            difference_between_rt_and_original = max_target_dur - rt
+            fix_after_feedback_adjusted += difference_between_rt_and_original
+        else:
         show_fixation(fix_after_feedback_adjusted)
 
         if DEBUG:
@@ -597,11 +587,6 @@ for run in range(0, num_runs):
         show_stim(None, 26)
         show_stim(breakEnd, 2)
 
-    # Wait for fMRI start of TR signal?
-    if fmri:
-        fix.draw()
-        win.flip()
-        event.waitKeys(keyList=startKeys)
 
 # completed experimental phase
 
