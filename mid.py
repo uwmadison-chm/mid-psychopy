@@ -555,7 +555,6 @@ for run in range(0, num_runs):
         if rt:
             difference_between_rt_and_original = max_target_dur - rt
             fix_after_feedback_adjusted += difference_between_rt_and_original
-        else:
         show_fixation(fix_after_feedback_adjusted)
 
         if DEBUG:
