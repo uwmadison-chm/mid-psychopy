@@ -237,10 +237,10 @@ Target = visual.Rect(win,width=0.5, height=0.5, fillColor = "white", lineWidth=0
 # Initialize components for Routine "Feedback"
 FeedbackClock = core.Clock()
 trial_feedback = visual.TextStim(win=win, name='trial_feedback',
-    text='Trial:', font='Arial', pos=(0, yScr/6), height=fontH+yScr/20, wrapWidth=None, ori=0,
+    text='Trial:', font='Arial', pos=(0, yScr/16), height=fontH+yScr/20, wrapWidth=None, ori=0,
     color='White', colorSpace='rgb', opacity=1);
 exp_feedback = visual.TextStim(win=win, name='exp_feedback',
-    text='Total:', font='Arial', pos=(0, -yScr/20), height=fontH+yScr/20, wrapWidth=None, ori=0,
+    text='Total:', font='Arial', pos=(0, -yScr/16), height=fontH+yScr/20, wrapWidth=None, ori=0,
     color='White', colorSpace='rgb', opacity=1);
 
 breakPrompt = visual.TextStim(win, text="Take a break", height=fontH, color=text_color, pos=(0,0))
@@ -266,8 +266,6 @@ event.clearEvents(eventType='keyboard')
 
 ### PREP EXPERIMENTAL LOOP
 
-# set up counters for trials (to determine stimulus and for total earnings)
-trial_counter = 0
 total_earnings = 0
 
 # load a list of the possible order files
@@ -324,7 +322,7 @@ for run in range(0, num_runs):
 
     globalClock.reset() # to align actual time with virtual time keeper
     if DEBUG:
-        print("actual start {globalClock.getTime()}")
+        print(f"actual start {globalClock.getTime()}")
 
     runClock.reset()
     if DEBUG:
@@ -344,7 +342,7 @@ for run in range(0, num_runs):
 
         trials.addOtherData('time.onset', globalClock.getTime()) # add trial onset time to the data file
 
-        trial_details = order[trial_counter]
+        trial_details = order[trial]
         trial_type = trial_details['trial.type']
 
         def log_detail(x):
@@ -354,8 +352,6 @@ for run in range(0, num_runs):
             log_detail('fix.after.stim')
             log_detail('fix.after.feedback')
             log_detail('trial.type')
-
-        trial_counter += 1
 
         cue = cues[trial_type]
 
@@ -436,9 +432,10 @@ for run in range(0, num_runs):
                     continueRoutine = True
                     break  # at least one component has not yet finished
 
-            # refresh the screen
-            if continueRoutine: # don't flip if this routine is over or we'll get a blank screen
-                win.flip()
+            # draw fixation if we're done, so we don't leave a blank screen for any frames
+            if not continueRoutine:
+                fix.draw()
+            win.flip()
 
         # -------Ending Routine "Target"-------
         for thisComponent in TargetComponents:
@@ -490,16 +487,22 @@ for run in range(0, num_runs):
         continueRoutine = True
         routineTimer.add(feedback_time)
 
-        def cash_string(r):
-            if reward > 0:
-                return f"+${reward}.00"
-            elif reward < 0:
-                return f"-${reward * -1}.00"
+        def trial_cash_string(r):
+            if r > 0:
+                return f"+${r}.00"
+            elif r < 0:
+                return f"-${r * -1}.00"
             else:
-                return f"${reward}.00"
+                return f"${r}.00"
 
-        trial_feedback.setText(cash_string(reward))
-        exp_feedback.setText('[' + cash_string(total_earnings) + ']')
+        def total_cash_string(r):
+            if r < 0:
+                return f"-${r * -1}.00"
+            else:
+                return f"${r}.00"
+
+        trial_feedback.setText(trial_cash_string(reward))
+        exp_feedback.setText('[' + total_cash_string(total_earnings) + ']')
 
         trials.addOtherData('total_earnings', total_earnings)
 
