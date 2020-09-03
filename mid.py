@@ -320,17 +320,16 @@ for run in range(0, num_runs):
         # launch: operator selects Scan or Test (emulate); see API docuwmentation
         vol = launchScan(win, MR_settings, globalClock=globalClock, wait_msg=wait_str)
 
-    globalClock.reset() # to align actual time with virtual time keeper
+    runClock.reset()
+    if run == 0:
+        globalClock.reset() # to align actual time with virtual time keeper
+
     if DEBUG:
         print(f"actual start {globalClock.getTime()}")
-
-    runClock.reset()
-    if DEBUG:
         print(f'run {run + 1} of {num_runs}')
 
-    # present initial fixation on the first run
-    if run == 0:
-        show_fixation(initial_fix_duration)
+    # present initial fixation
+    show_fixation(initial_fix_duration)
 
     for trial in range(0, num_trials):
         if DEBUG:
@@ -340,7 +339,7 @@ for run in range(0, num_runs):
         trials.addOtherData('trial.staircase.duration', trial_duration)
         trialClock.reset()
 
-        trials.addOtherData('time.onset', globalClock.getTime()) # add trial onset time to the data file
+        trials.addOtherData('time.onset', globalClock.getTime())
 
         trial_details = order[trial]
         trial_type = trial_details['trial.type']
