@@ -42,7 +42,7 @@ loss_high = -7
 loss_low = -1
 
 initial_fix_duration = 8 # added time to make sure homogenicity of magnetic field is reached
-min_target_dur = 0.16 # sets the minimum presentation time for target (in seconds)
+min_target_dur = 0.0 # sets the minimum presentation time for target (in seconds)
 max_target_dur = 0.5
 cue_time = 0.25
 feedback_time = 2.0
@@ -227,7 +227,7 @@ cues = {
     'neutral':     visual.ImageStim(win, size=0.6, image="assets/neutral.png"),
     'loss.low':    visual.ImageStim(win, size=0.6, image="assets/loss1.png"),
     'loss.high':   visual.ImageStim(win, size=0.6, image="assets/loss2.png"),
-}
+    }
 CueClock = core.Clock()
 
 # Initialize components for Routine "Target"
@@ -273,17 +273,30 @@ orders = list(Path(os.path.join(_thisDir, "orders")).glob("*.csv"))
 # pick 3 random trial orders without replacement
 order_files = random.sample(orders, 3)
     
-# create the staircase handler to adjust for individual threshold (stairs defined in units of screen frames; actual minimum presentation duration is determined by the min_target_dur parameter, the staircase procedure can only add frame rates to that minimum value)
-trials = data.StairHandler(startVal=13.0,
-    stepType='lin',
-    stepSizes=[6, 3, 3, 2, 2, 1, 1],  # reduce step size every two reversals
-    minVal=0, maxVal=20,
-    nUp=1,
-    nDown=2, # will home in on the 66% threshold (nUp=1, nDown=3 homes in on 80%)
-    nTrials=num_runs * num_trials,
-    extraInfo=expInfo)
+# create the staircase handlers to adjust for individual threshold
+# (stairs defined in units of screen frames; actual minimum presentation
+# duration is determined by the min_target_dur parameter, the staircase 
+# procedure can only add frame rates to that minimum value)
 
-exp.addLoop(trials) # add the staircaser to the experiment
+def make_stairs(nTrials):
+    return data.StairHandler(startVal=15.0,
+        stepType='lin',
+        stepSizes=[6, 3, 3, 2, 2, 1, 1],  # reduce step size every two reversals
+        minVal=0, maxVal=30,
+        nUp=1,
+        nDown=2, # will home in on the 66% threshold (nUp=1, nDown=3 homes in on 80%)
+        nTrials=nTrials,
+        extraInfo=expInfo)
+
+perStim = num_runs * num_trials / 6
+
+stairs = {
+    'reward.low':  make_stairs(perStim),
+    'reward.high': make_stairs(perStim),
+    'neutral':     make_stairs(perStim * 2),
+    'loss.low':    make_stairs(perStim),
+    'loss.high':   make_stairs(perStim),
+    }
 
 def show_stim(stim, duration):
     t_start = globalClock.getTime()
@@ -299,13 +312,14 @@ def show_fixation(duration):
 
 
 # EXPERIMENT BEGINS
+trial_number = 0
 
 # Loop the rest of this for num_runs
 for run in range(0, num_runs):
     order_file = order_files[run]
     order = csv.DictReader(open(order_file))
     order = list(order)
-    trials.addOtherData('run.order.file', order_file)
+    exp.addData('run.order.file', order_file)
     if DEBUG:
         print(f'order_file is {order_file}')
 
@@ -335,14 +349,22 @@ for run in range(0, num_runs):
         if DEBUG:
             print(f'trial {trial + 1} of {num_trials}')
 
-        trial_duration = trials.next()
-        trials.addOtherData('trial.staircase.duration', trial_duration)
-        trialClock.reset()
-
-        trials.addOtherData('time.onset', globalClock.getTime())
-
+        # Total trial number along all runs
+        trial_number += 1
         trial_details = order[trial]
         trial_type = trial_details['trial.type']
+
+        trial_stairs = stairs[trial_type]
+
+        trial_duration_frames = trial_stairs.next()
+        exp.addData('trial.staircase.durationFrames', trial_duration_frames)
+        exp.addData('trial.staircase.thisTrialN', trial_stairs.thisTrialN)
+
+        trialClock.reset()
+
+        exp.addData('trial.number', trial_number)
+        exp.addData('time.onset', globalClock.getTime())
+
 
         def log_detail(x):
             print(f"{x}: {trial_details[x]}")
@@ -407,10 +429,10 @@ for run in range(0, num_runs):
                 event.clearEvents(eventType='keyboard')
                 theseKeys = []
 
-            frameRemainsResp = min_target_dur + frameDur * trial_duration
+            frameRemainsResp = min_target_dur + frameDur * trial_duration_frames
             if Target.status == STARTED and t >= frameRemainsResp:
                 if DEBUG:
-                    print('trial_duration:',trial_duration)
+                    print('trial_duration_frames:',trial_duration_frames)
                     print('frameDur:',frameDur)
                     print('frameRemainsResp:',frameRemainsResp)
 
@@ -444,12 +466,13 @@ for run in range(0, num_runs):
         if DEBUG:
             print('time after target: ', trialClock.getTime())
 
-        # add the data to the staircase so it can be used to calculate the next level
-        trials.addResponse(trial_response)
+        # add the data to the current staircase so it can be used to calculate the next level
+        trial_stairs.addResponse(trial_response)
+        exp.addData("trial.response", trial_response)
 
         # check responses to add RT
         if trial_response:
-            trials.addOtherData('target_response.rt', target_response.rt)
+            exp.addData('target_response.rt', target_response.rt)
 
         reward = 0
 
@@ -467,7 +490,7 @@ for run in range(0, num_runs):
             if not trial_response:
                 reward = loss_low
 
-        trials.addOtherData('trial.reward', reward)
+        exp.addData('trial.reward', reward)
         total_earnings += reward
         if DEBUG:
             print(f"{trial_type} result: {trial_response}, reward is {reward} for total {total_earnings}" )
@@ -503,7 +526,7 @@ for run in range(0, num_runs):
         trial_feedback.setText(trial_cash_string(reward))
         exp_feedback.setText('[' + total_cash_string(total_earnings) + ']')
 
-        trials.addOtherData('total_earnings', total_earnings)
+        exp.addData('total_earnings', total_earnings)
 
         # keep track of which components have finished
         FeedbackComponents = [trial_feedback, exp_feedback]
@@ -563,12 +586,12 @@ for run in range(0, num_runs):
             print('time after final fix: ', trialClock.getTime())
 
         # completed trial, add some data to log file
-        trials.addOtherData('fix.after.feedback.adjusted', fix_after_feedback_adjusted)
-        trials.addOtherData('time.trial', trialClock.getTime())
-        trials.addOtherData('time.run', runClock.getTime())
-        trials.addOtherData('time.global', globalClock.getTime())
+        exp.addData('fix.after.feedback.adjusted', fix_after_feedback_adjusted)
+        exp.addData('time.trial', trialClock.getTime())
+        exp.addData('time.run', runClock.getTime())
+        exp.addData('time.global', globalClock.getTime())
         def add_detail(x):
-            trials.addOtherData(x, trial_details[x])
+            exp.addData(x, trial_details[x])
         add_detail('trial.type')
         add_detail('fix.after.cue')
         add_detail('fix.after.stim')
