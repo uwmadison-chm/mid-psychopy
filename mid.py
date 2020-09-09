@@ -42,11 +42,11 @@ loss_high = -7
 loss_low = -1
 
 initial_fix_duration = 8 # added time to make sure homogenicity of magnetic field is reached
-min_target_dur = 0.0 # sets the minimum presentation time for target (in seconds)
-max_target_dur = 0.5
-cue_time = 0.25
-feedback_time = 2.0
-closing_fix_dur = 18 # added time to make sure haemodynamic responses of the last trials are properly modeled
+min_target_dur = 0.1 # sets the minimum presentation time for target (in seconds)
+max_target_dur = 0.5 # maximum presentation of target (in seconds)
+cue_time = 0.25 # how long the cue is displayed (in seconds)
+feedback_time = 2.0 # how long the trial + total reward feedback is displayed (in seconds)
+closing_fix_dur = 18.0 # added time to make sure haemodynamic responses of the last trials are properly modeled
 
 # settings for fMRI emulation:
 MR_settings = {
