@@ -472,7 +472,7 @@ for run in range(0, num_runs):
 
         # check responses to add RT
         if trial_response:
-            exp.addData('target_response.rt', target_response.rt)
+            exp.addData('trial.rt', target_response.rt)
 
         reward = 0
 
