@@ -34,7 +34,7 @@ inst_file = ["instructions_MID.txt"] # name of instructions files (needs to be .
 
 num_runs = 3
 # Trials per run
-num_trials = 30
+num_trials = 3
 
 reward_high = 7
 reward_low = 1
@@ -67,7 +67,12 @@ def initialization(expName,version):
     expInfo = {
         'participant': '9999',
         'session': '1', 
-        'fMRI? (yes or no)': 'no'
+        'fMRI? (yes or no)': 'no',
+        'staircase start reward.low':  '15',
+        'staircase start reward.high': '15',
+        'staircase start neutral':     '15',
+        'staircase start loss.low':    '15',
+        'staircase start loss.high':   '15',
     }
     dlg = gui.DlgFromDict(dictionary=expInfo, title=expName)
     if dlg.OK == False:
@@ -190,6 +195,7 @@ forwardKey = "2"
 backKey = "1"
 startKeys = ["enter","equal","return"]
 expKeys = ["1","2","3","4","5","6","7","8","9"]
+escapeKeys = ["escape"]
 
 instructFirst = visual.TextStim(win, text=f"Press {forwardKey} to continue.", height=fontH, color=text_color, pos=[0, -yScr/4])
 instructMove = visual.TextStim(win, text=f"Press {forwardKey} to continue, or {backKey} to go back.", height=fontH, color=text_color, pos=[0, -yScr/4])
@@ -278,8 +284,8 @@ order_files = random.sample(orders, 3)
 # duration is determined by the min_target_dur parameter, the staircase 
 # procedure can only add frame rates to that minimum value)
 
-def make_stairs(nTrials):
-    return data.StairHandler(startVal=15.0,
+def make_stairs(nTrials, startVal=15.0):
+    return data.StairHandler(startVal=startVal,
         stepType='lin',
         stepSizes=[6, 3, 3, 2, 2, 1, 1],  # reduce step size every two reversals
         minVal=0, maxVal=30,
@@ -291,21 +297,38 @@ def make_stairs(nTrials):
 perStim = num_runs * num_trials / 6
 
 stairs = {
-    'reward.low':  make_stairs(perStim),
-    'reward.high': make_stairs(perStim),
-    'neutral':     make_stairs(perStim * 2),
-    'loss.low':    make_stairs(perStim),
-    'loss.high':   make_stairs(perStim),
+    'loss.high':   make_stairs(perStim,     int(expInfo['staircase start loss.high'])),
+    'loss.low':    make_stairs(perStim,     int(expInfo['staircase start loss.low'])),
+    'neutral':     make_stairs(perStim * 2, int(expInfo['staircase start neutral'])),
+    'reward.high': make_stairs(perStim,     int(expInfo['staircase start reward.high'])),
+    'reward.low':  make_stairs(perStim,     int(expInfo['staircase start reward.low'])),
     }
+staircase_end = {}
+
+def get_keypress():
+    keys = event.getKeys()
+    if keys:
+        return keys[0]
+    return None
+
+def shutdown():
+    logging.flush()
+    win.close()
+    core.quit()
 
 def show_stim(stim, duration):
     t_start = globalClock.getTime()
     t = t_start
+    event.clearEvents(eventType='keyboard')
     while t < t_start + float(duration):
+        if get_keypress() in escapeKeys:
+            logging.warning("Escape pressed, exiting early!")
+            shutdown()
         t = globalClock.getTime()
         if stim:
             stim.draw()
         win.flip()
+        
 
 def show_fixation(duration):
     show_stim(fix, duration)
@@ -357,6 +380,8 @@ for run in range(0, num_runs):
         trial_stairs = stairs[trial_type]
 
         trial_duration_frames = trial_stairs.next()
+        staircase_end[trial_type] = trial_duration_frames
+
         exp.addData('trial.staircase.durationFrames', trial_duration_frames)
         exp.addData('trial.staircase.thisTrialN', trial_stairs.thisTrialN)
 
@@ -614,11 +639,13 @@ for run in range(0, num_runs):
 
 # completed experimental phase
 
+for k, v in staircase_end.items():
+    logging.warning(f"Staircase end value for {k}: {v}")
+
+
 # end of study message
 endf.draw()
 win.flip()
 event.waitKeys(keyList=startKeys)
 
-logging.flush()
-win.close()
-core.quit()
+shutdown()
