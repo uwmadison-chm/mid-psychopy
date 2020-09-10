@@ -325,18 +325,23 @@ def show_stim(stim, duration):
     t_start = globalClock.getTime()
     t = t_start
     event.clearEvents(eventType='keyboard')
+    rt = None
     while t < t_start + float(duration):
-        if get_keypress() in escapeKeys:
+        key = get_keypress()
+        if key in escapeKeys:
             logging.warning("Escape pressed, exiting early!")
             shutdown()
+        if not rt and key in expKeys:
+            rt = t_start - t
         t = globalClock.getTime()
         if stim:
             stim.draw()
         win.flip()
+    return rt
         
 
 def show_fixation(duration):
-    show_stim(fix, duration)
+    return show_stim(fix, duration)
 
 
 # EXPERIMENT BEGINS
@@ -409,12 +414,16 @@ for run in range(0, num_runs):
         if DEBUG:
             print('time before cue: ', trialClock.getTime())
 
-        show_stim(cue, cue_time)
+        cue_rt = show_stim(cue, cue_time)
+        if cue_rt:
+            exp.addData('trial.cue_rt', cue_rt)
 
         if DEBUG:
             print('time after cue: ', trialClock.getTime())
 
-        show_fixation(trial_details['fix.after.cue'])
+        too_fast_rt = show_fixation(trial_details['fix.after.cue'])
+        if too_fast_rt:
+            exp.addData('trial.too_fast_rt', too_fast_rt)
 
         if DEBUG:
             print('time after first fix: ', trialClock.getTime())
@@ -528,7 +537,9 @@ for run in range(0, num_runs):
             print(f"{trial_type} result: {trial_response}, reward is {reward} for total {total_earnings}" )
 
         # Fixation after stim target
-        show_fixation(trial_details['fix.after.stim'])
+        too_slow_rt = show_fixation(trial_details['fix.after.stim'])
+        if too_slow_rt:
+            exp.addData('trial.too_slow_rt', too_slow_rt)
 
         if DEBUG:
             print('time after second fix: ', trialClock.getTime())
