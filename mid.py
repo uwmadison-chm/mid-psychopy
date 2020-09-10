@@ -34,7 +34,7 @@ inst_file = ["instructions_MID.txt"] # name of instructions files (needs to be .
 
 num_runs = 3
 # Trials per run
-num_trials = 3
+num_trials = 30
 
 reward_high = 7
 reward_low = 1
