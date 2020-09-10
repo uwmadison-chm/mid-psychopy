@@ -332,7 +332,7 @@ def show_stim(stim, duration):
             logging.warning("Escape pressed, exiting early!")
             shutdown()
         if not rt and key in expKeys:
-            rt = t_start - t
+            rt = t - t_start
         t = globalClock.getTime()
         if stim:
             stim.draw()
@@ -513,11 +513,14 @@ for run in range(0, num_runs):
         # add the data to the current staircase so it can be used to calculate the next level
         trial_stairs.addResponse(trial_response)
         exp.addData("trial.response", trial_response)
-        exp.addData('trial.stim_duration', stim_duration)
+        exp.addData('trial.staircase_stim_duration', stim_duration)
 
         # check responses to add RT
         if trial_response:
             exp.addData('trial.rt', target_response.rt)
+            exp.addData('trial.stim_duration', target_response.rt)
+        else:
+            exp.addData('trial.stim_duration', stim_duration)
 
         reward = 0
 
