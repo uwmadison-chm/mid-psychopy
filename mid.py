@@ -312,6 +312,11 @@ def get_keypress():
     return None
 
 def shutdown():
+    for k, v in staircase_end.items():
+        logging.warning(f"Staircase end value for {k}: {v}")
+
+    logging.warning(f"Total earnings: {total_earnings}")
+
     logging.flush()
     win.close()
     core.quit()
@@ -640,9 +645,6 @@ for run in range(0, num_runs):
 
 
 # completed experimental phase
-
-for k, v in staircase_end.items():
-    logging.warning(f"Staircase end value for {k}: {v}")
 
 
 # end of study message
