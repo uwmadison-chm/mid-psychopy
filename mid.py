@@ -183,9 +183,9 @@ text_color = 'white'
 # store frame rate of monitor if we can measure it
 expInfo['frameRate'] = win.getActualFrameRate()
 if expInfo['frameRate'] != None and expInfo['frameRate'] < 300:
-    frameDur = 1.0 / round(expInfo['frameRate'])
+    frame_duration = 1.0 / round(expInfo['frameRate'])
 else:
-    frameDur = 1.0 / 60.0  # could not measure, so guess
+    frame_duration = 1.0 / 60.0  # could not measure, so guess
 
 # set random seed - participant and session dependent
 random.seed(sn * (session + 1000))
@@ -442,6 +442,7 @@ for run in range(0, num_runs):
 
             # selection screen updates
             if t >= 0.0 and Target.status == NOT_STARTED:
+                stim_duration = min_target_dur + frame_duration * trial_duration_frames
                 # keep track of start time/frame for later
                 Target.tStart = t
                 # display target
@@ -454,12 +455,12 @@ for run in range(0, num_runs):
                 event.clearEvents(eventType='keyboard')
                 theseKeys = []
 
-            frameRemainsResp = min_target_dur + frameDur * trial_duration_frames
-            if Target.status == STARTED and t >= frameRemainsResp:
+            stim_duration = min_target_dur + frame_duration * trial_duration_frames
+            if Target.status == STARTED and t >= stim_duration:
                 if DEBUG:
-                    print('trial_duration_frames:',trial_duration_frames)
-                    print('frameDur:',frameDur)
-                    print('frameRemainsResp:',frameRemainsResp)
+                    print('trial_duration_frames:', trial_duration_frames)
+                    print('frame_duration:', frame_duration)
+                    print('stim_duration:', stim_duration)
 
                 Target.setAutoDraw(False)
                 theseKeys = event.getKeys(keyList=expKeys)
@@ -494,6 +495,7 @@ for run in range(0, num_runs):
         # add the data to the current staircase so it can be used to calculate the next level
         trial_stairs.addResponse(trial_response)
         exp.addData("trial.response", trial_response)
+        exp.addData('trial.stim_duration', stim_duration)
 
         # check responses to add RT
         if trial_response:
