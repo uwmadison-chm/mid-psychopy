@@ -506,7 +506,7 @@ for run in range(0, num_runs):
         if DEBUG:
             print('time after target: ', trialClock.getTime())
 
-        if too_fast_rt and trial_response:
+        if (cue_rt or too_fast_rt) and trial_response:
             # Fail them if they are button mashing too early
             trial_response = 0
 
