@@ -195,7 +195,7 @@ forwardKey = "2"
 backKey = "1"
 startKeys = ["enter","equal","return"]
 expKeys = ["1","2","3","4","5","6","7","8","9"]
-escapeKeys = ["escape"]
+escapeKeys = ["escape", "esc"]
 
 instructFirst = visual.TextStim(win, text=f"Press {forwardKey} to continue.", height=fontH, color=text_color, pos=[0, -yScr/4])
 instructMove = visual.TextStim(win, text=f"Press {forwardKey} to continue, or {backKey} to go back.", height=fontH, color=text_color, pos=[0, -yScr/4])
@@ -328,7 +328,7 @@ def show_stim(stim, duration):
     rt = None
     while t < t_start + float(duration):
         key = get_keypress()
-        if key in escapeKeys:
+        if key.lower() in escapeKeys:
             logging.warning("Escape pressed, exiting early!")
             shutdown()
         if not rt and key in expKeys:
