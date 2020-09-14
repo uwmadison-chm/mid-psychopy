@@ -328,7 +328,7 @@ def show_stim(stim, duration):
     rt = None
     while t < t_start + float(duration):
         key = get_keypress()
-        if key.lower() in escapeKeys:
+        if key and key.lower() in escapeKeys:
             logging.warning("Escape pressed, exiting early!")
             shutdown()
         if not rt and key in expKeys:
