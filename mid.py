@@ -322,18 +322,19 @@ def shutdown():
     core.quit()
 
 def show_stim(stim, duration):
+    duration = float(duration)
     t_start = globalClock.getTime()
-    t = t_start
+    routineTimer.reset()
+    routineTimer.add(duration)
     event.clearEvents(eventType='keyboard')
     rt = None
-    while t < t_start + float(duration):
+    while routineTimer.getTime() > 0:
         key = get_keypress()
         if key and key.lower() in escapeKeys:
             logging.warning("Escape pressed, exiting early!")
             shutdown()
         if not rt and key in expKeys:
-            rt = t - t_start
-        t = globalClock.getTime()
+            rt = duration - routineTimer.getTime()
         if stim:
             stim.draw()
         win.flip()
