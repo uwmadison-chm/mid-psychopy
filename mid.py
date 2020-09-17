@@ -405,6 +405,8 @@ for run in range(0, num_runs):
     runClock.reset()
     if run == 0:
         globalClock.reset() # to align actual time with virtual time keeper
+    exp.addData('run.system.time', time.asctime())
+    exp.nextEntry()
 
     if DEBUG:
         print(f"actual start {globalClock.getTime()}")
