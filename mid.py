@@ -405,7 +405,9 @@ for run in range(0, num_runs):
     runClock.reset()
     if run == 0:
         globalClock.reset() # to align actual time with virtual time keeper
-    exp.addData('run.system.time', time.asctime())
+    now = time.time()
+    exp.addData('run.system.seconds_since_epoch', now)
+    exp.addData('run.system.time', time.asctime(now))
     exp.nextEntry()
 
     if DEBUG:
@@ -434,7 +436,9 @@ for run in range(0, num_runs):
         exp.addData('trial.staircase.durationFrames', trial_duration_frames)
         exp.addData('trial.staircase.thisTrialN', trial_stairs.thisTrialN)
 
-        exp.addData('trial.system.time', time.asctime())
+        now = time.time()
+        exp.addData('trial.system.seconds_since_epoch', now)
+        exp.addData('trial.system.time', time.asctime(now))
 
         trialClock.reset()
 
