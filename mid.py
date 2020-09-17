@@ -30,7 +30,6 @@ expName = "MID"
 version = "1.0"
 data_dir = "data" # location of outputs to be generated; includes data for participants as well as trial selection and trial presentation sequence
 inst_dir = "text" # location of instructions directory
-inst_file = ["instructions_MID.txt"] # name of instructions files (needs to be .txt)
 
 num_runs = 3
 # Trials per run
@@ -47,6 +46,8 @@ max_target_dur = 0.5 # maximum presentation of target (in seconds)
 cue_time = 2.0 # how long the cue is displayed (in seconds)
 feedback_time = 2.0 # how long the trial + total reward feedback is displayed (in seconds)
 closing_fix_dur = 18.0 # added time to make sure haemodynamic responses of the last trials are properly modeled
+
+single_speed_factor = 0.25 # how much to multiply fixations by, if doing a single staircase-stabilizing run, to speed it up
 
 # settings for fMRI emulation:
 MR_settings = {
@@ -68,6 +69,7 @@ def initialization(expName,version):
         'participant': '9999',
         'session': '1', 
         'fMRI? (yes or no)': 'no',
+        'outside scanner single run for staircase?': 'no',
         'staircase start reward.low':  '15',
         'staircase start reward.high': '15',
         'staircase start neutral':     '15',
@@ -87,7 +89,13 @@ def initialization(expName,version):
         fmri = True
     else:
         fmri = False
-    return(expInfo,expName,sn,session,fmri)
+
+    if expInfo['outside scanner single run for staircase?'].lower() == 'yes':
+        single = True
+    else:
+        single = False
+
+    return(expInfo,expName,sn,session,fmri,single)
 
 
 def make_screen():
@@ -127,7 +135,7 @@ def start_datafiles(_thisDir, expName, expInfo, data_dir, sn, fmri):
 def display_inst(instr_part,task,forwardKey,backKey,startKeys,instructFinish):
     """ display instructions
     instr_part: instructions extracted from text
-    task: task serial number (in actual serial order, starting at 1; convetred to Python's representation, where 1 is 0, in the function"""
+    task: task serial numbe"""
     endOfInstructions = False
     instructLine = 0
     inst = instr_part[task-1]
@@ -160,7 +168,7 @@ _thisDir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(_thisDir)
 
 # present initialization dialog
-[expInfo,expName,sn,session,fmri] = initialization(expName,version)
+[expInfo,expName,sn,session,fmri,single] = initialization(expName,version)
 
 # Data file name creation; later add .psyexp, .csv, .log, etc
 filename = start_datafiles(_thisDir, expName, expInfo, data_dir, sn, fmri)
@@ -194,11 +202,21 @@ random.seed(sn * (session + 1000))
 forwardKey = "2"
 backKey = "1"
 startKeys = ["enter","equal","return"]
-expKeys = ["1","2","3","4","5","6","7","8","9"]
+expKeys = ["1","2","3","4","5","6","7","8","9","space"]
 escapeKeys = ["escape", "esc"]
 
-instructFirst = visual.TextStim(win, text=f"Press {forwardKey} to continue.", height=fontH, color=text_color, pos=[0, -yScr/4])
-instructMove = visual.TextStim(win, text=f"Press {forwardKey} to continue, or {backKey} to go back.", height=fontH, color=text_color, pos=[0, -yScr/4])
+if fmri:
+    instructFirstText = f"Press button 2 to continue."
+    instructMoveText = f"Press button 2 to continue, or button 1 to go back."
+    inst_file = ["instructions_MID.txt"]
+else:
+    instructFirstText = f"Press {forwardKey} to continue."
+    instructMoveText = f"Press {forwardKey} to continue, or {backKey} to go back."
+    inst_file = ["instructions_MID_outside_scanner.txt"]
+
+instructFirst = visual.TextStim(win, text=instructFirstText, height=fontH, color=text_color, pos=[0, -yScr/4])
+instructMove = visual.TextStim(win, text=instructMoveText, height=fontH, color=text_color, pos=[0, -yScr/4])
+
 
 # import instructions
 instr_part = [[],[],[]]
@@ -218,7 +236,12 @@ clock = core.Clock()
 
 # Initialize components for Routine "instructions"
 instructPrompt = visual.TextStim(win=win, font='Arial', pos=(0, yScr/10), height=fontH, wrapWidth=wrapW, color=text_color);
-instructFinish = visual.TextStim(win, text="You have reached the end of the instructions. When you are ready to begin the task, place your fingers on the keys and notify the experimenter.",
+if fmri:
+    endInstructions = "When you are ready to begin the task, place your finger on any button and notify the experimenter."
+else:
+    endInstructions = "When you are ready to begin the task, place your fingers on the space bar and hit Enter to begin."
+
+instructFinish = visual.TextStim(win, text=endInstructions,
                                      height=fontH, color=text_color, pos=[0, 0], wrapWidth=wrapW)
 
 # Initialize components for task transitions
@@ -284,10 +307,20 @@ order_files = random.sample(orders, 3)
 # duration is determined by the min_target_dur parameter, the staircase 
 # procedure can only add frame rates to that minimum value)
 
+
+if single:
+    # Single mode to get the staircase numbers for the scanner run
+    num_runs = 1
+    stepSizes = [6, 3, 3, 2, 2, 1, 1]
+else:
+    # Scanner run, needs less adjustment
+    stepSizes = [2, 2, 1, 1]
+
+
 def make_stairs(nTrials, startVal=15.0):
     return data.StairHandler(startVal=startVal,
         stepType='lin',
-        stepSizes=[6, 3, 3, 2, 2, 1, 1],  # reduce step size every two reversals
+        stepSizes=stepSizes,
         minVal=0, maxVal=30,
         nUp=1,
         nDown=2, # will home in on the 66% threshold (nUp=1, nDown=3 homes in on 80%)
@@ -348,6 +381,9 @@ def show_fixation(duration):
 # EXPERIMENT BEGINS
 trial_number = 0
 
+def speed_up(duration):
+    return float(duration) * single_speed_factor
+
 # Loop the rest of this for num_runs
 for run in range(0, num_runs):
     order_file = order_files[run]
@@ -373,6 +409,8 @@ for run in range(0, num_runs):
         print(f'run {run + 1} of {num_runs}')
 
     # present initial fixation
+    if single:
+        initial_fix_duration = speed_up(initial_fix_duration)
     show_fixation(initial_fix_duration)
 
     for trial in range(0, num_trials):
@@ -392,7 +430,7 @@ for run in range(0, num_runs):
         exp.addData('trial.staircase.durationFrames', trial_duration_frames)
         exp.addData('trial.staircase.thisTrialN', trial_stairs.thisTrialN)
 
-        exp.addData('trial.system.clock', time.time())
+        exp.addData('trial.system.time', time.asctime())
 
         trialClock.reset()
 
@@ -420,7 +458,10 @@ for run in range(0, num_runs):
         if DEBUG:
             print('time after cue: ', trialClock.getTime())
 
-        too_fast_rt = show_fixation(trial_details['fix.after.cue'])
+        fix_after_cue = trial_details['fix.after.cue']
+        if single:
+            fix_after_cue = speed_up(fix_after_cue)
+        too_fast_rt = show_fixation(fix_after_cue)
         if too_fast_rt:
             exp.addData('trial.too_fast_rt', too_fast_rt)
 
@@ -543,7 +584,10 @@ for run in range(0, num_runs):
             print(f"{trial_type} result: {trial_response}, reward is {reward} for total {total_earnings}" )
 
         # Fixation after stim target
-        too_slow_rt = show_fixation(trial_details['fix.after.stim'])
+        fix_after_stim = trial_details['fix.after.stim']
+        if single:
+            fix_after_stim = speed_up(fix_after_stim)
+        too_slow_rt = show_fixation(fix_after_stim)
         if too_slow_rt:
             exp.addData('trial.too_slow_rt', too_slow_rt)
 
@@ -629,6 +673,8 @@ for run in range(0, num_runs):
         if rt:
             difference_between_rt_and_original = max_target_dur - rt
             fix_after_feedback_adjusted += difference_between_rt_and_original
+        if single:
+            fix_after_feedback_adjusted = speed_up(fix_after_feedback_adjusted)
         show_fixation(fix_after_feedback_adjusted)
 
         if DEBUG:
@@ -651,7 +697,7 @@ for run in range(0, num_runs):
 
     # completed run
     # present ending fixation (to allow for better evaluation of the last experimental TRs)
-    if fmri:
+    if fmri and not single:
         show_fixation(closing_fix_dur)
 
     # If we are NOT on the last run, show the break messages
