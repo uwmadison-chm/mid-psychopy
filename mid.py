@@ -16,11 +16,11 @@ Based on code originally written by @nivreggev, see README
 from psychopy import gui, visual, core, data, event, logging, monitors
 from psychopy.constants import (NOT_STARTED, STARTED, PLAYING, PAUSED,
                                 STOPPED, FINISHED, PRESSED, RELEASED, FOREVER)
-from psychopy.hardware.emulator import launchScan
 from numpy.random import random, shuffle
 import random
 import os
 import csv
+import time
 from pathlib import Path
 
 ## setting up some user-defined variables
@@ -359,14 +359,10 @@ for run in range(0, num_runs):
 
     # Wait for TR signal if in scanner
     if fmri:
-        if DEBUG:
-            print("waiting for TR")
+        print("waiting for TR")
         wait.draw()
         win.flip()
         event.waitKeys(keyList=startKeys)
-    elif run == 0:
-        # launch: operator selects Scan or Test (emulate); see API docuwmentation
-        vol = launchScan(win, MR_settings, globalClock=globalClock, wait_msg=wait_str)
 
     runClock.reset()
     if run == 0:
@@ -395,6 +391,8 @@ for run in range(0, num_runs):
 
         exp.addData('trial.staircase.durationFrames', trial_duration_frames)
         exp.addData('trial.staircase.thisTrialN', trial_stairs.thisTrialN)
+
+        exp.addData('trial.system.clock', time.time())
 
         trialClock.reset()
 
