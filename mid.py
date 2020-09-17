@@ -345,7 +345,9 @@ def get_keypress():
     return None
 
 def shutdown():
-    for k, v in staircase_end.items():
+    stairs = ['loss.high', 'loss.low', 'neutral', 'reward.high', 'reward.low']
+    for k in stairs:
+        v = staircase_end.get(k, 15)
         logging.warning(f"Staircase end value for {k}: {v}")
 
     logging.warning(f"Total earnings: {total_earnings}")
@@ -395,7 +397,7 @@ for run in range(0, num_runs):
 
     # Wait for TR signal if in scanner
     if fmri:
-        print("waiting for TR")
+        print("waiting for TR, or hit enter at same time as scan starts")
         wait.draw()
         win.flip()
         event.waitKeys(keyList=startKeys)
