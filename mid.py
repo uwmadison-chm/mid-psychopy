@@ -35,10 +35,6 @@ num_runs = 3
 # Trials per run
 num_trials = 30
 
-reward_high = 7
-reward_low = 1
-loss_high = -7
-loss_low = -1
 
 initial_fix_duration = 8 # added time to make sure homogenicity of magnetic field is reached
 min_target_dur = 0.1 # sets the minimum presentation time for target (in seconds)
@@ -49,14 +45,36 @@ closing_fix_dur = 18.0 # added time to make sure haemodynamic responses of the l
 
 single_speed_factor = 0.25 # how much to multiply fixations by, if doing a single staircase-stabilizing run, to speed it up
 
-# settings for fMRI emulation:
-MR_settings = {
-    'TR': 2.000,     # duration (sec) per whole-brain volume
-    'volumes': 110,  # number of whole-brain 3D volumes per scanning run
-    'sync': 'equal', # character to use as the sync timing event; assumed to come at start of a volume
-    'skip': 2,       # number of volumes lacking a sync pulse at start of scan (for T1 stabilization)
-    'sound': False
-}
+
+total_earnings = 0
+total_earnings_goal = 40
+
+reward_high = (5,7)
+reward_low = (1,3)
+loss_high = (-7,-5)
+loss_low = (-3,-1)
+
+def nudge_on_run(r):
+    # We nudge on the third run (2 when counting from 0)
+    return r == 2
+
+
+# Attempt to nudge rewards in a direction
+def reward_for_range(r, nudge=False):
+    if not nudge:
+        items = list(range(r[0], r[1]+1))
+        return random.choice(items)
+    else:
+        def distance_to_goal(x):
+            return abs(total_earnings + x - total_earnings_goal)
+
+        d0 = distance_to_goal(r[0])
+        d1 = distance_to_goal(r[1])
+
+        if d0 < d1:
+            return r[0]
+        else:
+            return r[1]
 
 
 ## defining some initialization functions
@@ -68,7 +86,7 @@ def initialization(expName,version):
     expInfo = {
         'participant': '9999',
         'session': '1', 
-        'fMRI? (yes or no)': 'no',
+        'fMRI? (yes or no)': 'yes',
         'outside scanner single run for staircase?': 'no',
         'staircase start reward.low':  '15',
         'staircase start reward.high': '15',
@@ -157,6 +175,7 @@ def display_inst(instr_part,task,forwardKey,backKey,startKeys,instructFinish):
         if inst[instructLine] == "end":
             endOfInstructions = True
 
+    print("end of instructions, hit enter to continue")
     instructFinish.draw()
     win.flip()
     event.waitKeys(keyList=startKeys)
@@ -246,7 +265,6 @@ instructFinish = visual.TextStim(win, text=endInstructions,
 
 # Initialize components for task transitions
 wait = visual.TextStim(win, pos=[0, 0], text="The task will begin momentarily. Get ready...", height=fontH, color=text_color)
-wait_str = "The task will begin momentarily. Get ready..."
 endf = visual.TextStim(win, pos=[0, 0], text="Thank you. This part of the experiment is now complete.",wrapWidth=wrapW, height=fontH, color=text_color)
 
 # Initialize components for Routine "cue"
@@ -294,8 +312,6 @@ event.clearEvents(eventType='keyboard')
 
 
 ### PREP EXPERIMENTAL LOOP
-
-total_earnings = 0
 
 # load a list of the possible order files
 orders = list(Path(os.path.join(_thisDir, "orders")).glob("*.csv"))
@@ -531,9 +547,9 @@ for run in range(0, num_runs):
                     target_response.rt = rt
 
             # check if all components have finished
-            if not continueRoutine:  # a component has requested a forced-end of Routine
+            if not continueRoutine:
                 break
-            continueRoutine = False  # will revert to True if at least one component still running
+            continueRoutine = False
             for thisComponent in TargetComponents:
                 if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
                     continueRoutine = True
@@ -569,20 +585,22 @@ for run in range(0, num_runs):
             exp.addData('trial.stim_duration', stim_duration)
 
         reward = 0
+        nudge_reward = nudge_on_run(run)
+        exp.addData('trial.nudge_reward', nudge_reward)
 
         # update trial components
         if trial_type == 'reward.high':
             if trial_response:
-                reward = reward_high
+                reward = reward_for_range(reward_high, nudge_reward)
         elif trial_type == 'reward.low':
             if trial_response:
-                reward = reward_low
+                reward = reward_for_range(reward_low, nudge_reward)
         elif trial_type == 'loss.high':
             if not trial_response:
-                reward = loss_high
+                reward = reward_for_range(loss_high, nudge_reward)
         elif trial_type == 'loss.low':
             if not trial_response:
-                reward = loss_low
+                reward = reward_for_range(loss_low, nudge_reward)
 
         exp.addData('trial.reward', reward)
         total_earnings += reward
@@ -650,9 +668,9 @@ for run in range(0, num_runs):
                 exp_feedback.setAutoDraw(False)
 
             # check if all components have finished
-            if not continueRoutine:  # a component has requested a forced-end of Routine
+            if not continueRoutine:
                 break
-            continueRoutine = False  # will revert to True if at least one component still running
+            continueRoutine = False
             for thisComponent in FeedbackComponents:
                 if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
                     continueRoutine = True
