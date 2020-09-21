@@ -317,6 +317,7 @@ routineTimer = core.CountdownTimer()  # to track time remaining of each (non-sli
 event.clearEvents(eventType='keyboard')
 event.Mouse(visible=False)
 display_inst(instr_part,1,forwardKey,backKey,startKeys,instructFinish)
+print("instructions complete, continuing")
 
 # reset the non-slip timer for next routine
 routineTimer.reset()
@@ -373,6 +374,7 @@ def get_keypress():
     return None
 
 def shutdown():
+    print("Logging staircase end values and exiting...")
     stairs = ['loss.high', 'loss.low', 'neutral', 'reward.high', 'reward.low']
     for k in stairs:
         v = staircase_end.get(k, 15)
@@ -429,6 +431,8 @@ for run in range(0, num_runs):
         wait.draw()
         win.flip()
         event.waitKeys(keyList=startKeys)
+
+    print("starting task!")
 
     runClock.reset()
     if run == 0:
@@ -745,10 +749,10 @@ for run in range(0, num_runs):
 
 # completed experimental phase
 
-
-# end of study message
+# end of task message
 endf.draw()
 win.flip()
+print("end of task reached, hit enter to save results and close") 
 event.waitKeys(keyList=startKeys)
 
 shutdown()
