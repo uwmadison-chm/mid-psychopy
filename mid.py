@@ -432,7 +432,7 @@ for run in range(0, num_runs):
         win.flip()
         event.waitKeys(keyList=startKeys)
 
-    print("starting task!")
+    print("starting run {run + 1} of {num_runs}")
 
     runClock.reset()
     if run == 0:
@@ -443,7 +443,6 @@ for run in range(0, num_runs):
 
     if DEBUG:
         print(f"actual start {globalClock.getTime()}")
-        print(f'run {run + 1} of {num_runs}')
 
     # present initial fixation
     if single:
@@ -587,6 +586,7 @@ for run in range(0, num_runs):
         if (cue_rt or too_fast_rt) and trial_response:
             # Fail them if they are button mashing too early
             trial_response = 0
+            print("response: too fast")
 
         # add the data to the current staircase so it can be used to calculate the next level
         trial_stairs.addResponse(trial_response)
@@ -597,8 +597,10 @@ for run in range(0, num_runs):
         if trial_response:
             exp.addData('trial.rt', target_response.rt)
             exp.addData('trial.stim_duration', target_response.rt)
+            print(f"response: {target_response.rt}")
         else:
             exp.addData('trial.stim_duration', stim_duration)
+            print(f"response: none")
 
         reward = 0
         nudge_reward = nudge_on_run(run)
@@ -629,6 +631,7 @@ for run in range(0, num_runs):
             fix_after_stim = speed_up(fix_after_stim)
         too_slow_rt = show_fixation(fix_after_stim)
         if too_slow_rt:
+            print("response: too slow")
             exp.addData('trial.too_slow_rt', too_slow_rt)
 
         if DEBUG:
