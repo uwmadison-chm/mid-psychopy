@@ -87,6 +87,7 @@ def initialization(expName,version):
         'participant': '9999',
         'session': '1', 
         'fMRI? (yes or no)': 'yes',
+        'fMRI reverse screen? (yes or no)': 'yes',
         'outside scanner single run for staircase?': 'no',
         'staircase start reward.low':  '15',
         'staircase start reward.high': '15',
@@ -108,12 +109,17 @@ def initialization(expName,version):
     else:
         fmri = False
 
+    if expInfo['fMRI reverse screen? (yes or no)'].lower() == 'yes':
+        flipHoriz = True
+    else:
+        flipHoriz = False
+
     if expInfo['outside scanner single run for staircase?'].lower() == 'yes':
         single = True
     else:
         single = False
 
-    return(expInfo,expName,sn,session,fmri,single)
+    return(expInfo,expName,sn,session,fmri,single,flipHoriz)
 
 
 def make_screen():
@@ -187,7 +193,7 @@ _thisDir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(_thisDir)
 
 # present initialization dialog
-[expInfo,expName,sn,session,fmri,single] = initialization(expName,version)
+[expInfo,expName,sn,session,fmri,single,flipHoriz] = initialization(expName,version)
 
 # Data file name creation; later add .psyexp, .csv, .log, etc
 filename = start_datafiles(_thisDir, expName, expInfo, data_dir, sn, fmri)
@@ -233,8 +239,8 @@ else:
     instructMoveText = f"Press {forwardKey} to continue, or {backKey} to go back."
     inst_file = ["instructions_MID_outside_scanner.txt"]
 
-instructFirst = visual.TextStim(win, text=instructFirstText, height=fontH, color=text_color, pos=[0, -yScr/4])
-instructMove = visual.TextStim(win, text=instructMoveText, height=fontH, color=text_color, pos=[0, -yScr/4])
+instructFirst = visual.TextStim(win, text=instructFirstText, height=fontH, color=text_color, pos=[0, -yScr/4], flipHoriz=flipHoriz)
+instructMove = visual.TextStim(win, text=instructMoveText, height=fontH, color=text_color, pos=[0, -yScr/4], flipHoriz=flipHoriz)
 
 
 # import instructions
@@ -250,22 +256,22 @@ for inst in range (0,len(inst_file)):
 ## START component code to be run before the window creation
 
 # create fixation stimulus
-fix = visual.TextStim(win, pos=[0, 0], text='+', height=fontH*2, color=text_color)
+fix = visual.TextStim(win, pos=[0, 0], text='+', height=fontH*2, color=text_color, flipHoriz=flipHoriz)
 clock = core.Clock()
 
 # Initialize components for Routine "instructions"
-instructPrompt = visual.TextStim(win=win, font='Arial', pos=(0, yScr/10), height=fontH, wrapWidth=wrapW, color=text_color);
+instructPrompt = visual.TextStim(win=win, font='Arial', pos=(0, yScr/10), height=fontH, wrapWidth=wrapW, color=text_color, flipHoriz=flipHoriz);
 if fmri:
     endInstructions = "When you are ready to begin the task, place your finger on any button and notify the experimenter."
 else:
     endInstructions = "When you are ready to begin the task, place your fingers on the space bar and hit Enter to begin."
 
 instructFinish = visual.TextStim(win, text=endInstructions,
-                                     height=fontH, color=text_color, pos=[0, 0], wrapWidth=wrapW)
+                                     height=fontH, color=text_color, pos=[0, 0], wrapWidth=wrapW, flipHoriz=flipHoriz)
 
 # Initialize components for task transitions
-wait = visual.TextStim(win, pos=[0, 0], text="The task will begin momentarily. Get ready...", height=fontH, color=text_color)
-endf = visual.TextStim(win, pos=[0, 0], text="Thank you. This part of the experiment is now complete.",wrapWidth=wrapW, height=fontH, color=text_color)
+wait = visual.TextStim(win, pos=[0, 0], text="The task will begin momentarily. Get ready...", height=fontH, color=text_color, flipHoriz=flipHoriz)
+endf = visual.TextStim(win, pos=[0, 0], text="Thank you. This part of the experiment is now complete.",wrapWidth=wrapW, height=fontH, color=text_color, flipHoriz=flipHoriz)
 
 # Initialize components for Routine "cue"
 cues = {
@@ -285,13 +291,13 @@ Target = visual.Rect(win,width=0.5, height=0.5, fillColor = "white", lineWidth=0
 FeedbackClock = core.Clock()
 trial_feedback = visual.TextStim(win=win, name='trial_feedback',
     text='Trial:', font='Arial', pos=(0, yScr/16), height=fontH+yScr/20, wrapWidth=None, ori=0,
-    color='White', colorSpace='rgb', opacity=1);
+    color='White', colorSpace='rgb', opacity=1, flipHoriz=flipHoriz);
 exp_feedback = visual.TextStim(win=win, name='exp_feedback',
     text='Total:', font='Arial', pos=(0, -yScr/16), height=fontH+yScr/20, wrapWidth=None, ori=0,
-    color='White', colorSpace='rgb', opacity=1);
+    color='White', colorSpace='rgb', opacity=1, flipHoriz=flipHoriz);
 
-breakPrompt = visual.TextStim(win, text="Take a break", height=fontH, color=text_color, pos=(0,0))
-breakEnd = visual.TextStim(win, text="Get ready", height=fontH, color=text_color, pos=(0,0))
+breakPrompt = visual.TextStim(win, text="Take a break", height=fontH, color=text_color, pos=(0,0), flipHoriz=flipHoriz)
+breakEnd = visual.TextStim(win, text="Get ready", height=fontH, color=text_color, pos=(0,0), flipHoriz=flipHoriz)
 
 # Create some handy timers
 globalClock = core.Clock()  # to track the time since experiment started
