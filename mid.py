@@ -124,10 +124,16 @@ def initialization(expName,version):
 
 def make_screen():
     """Generates screen variables"""
-    win_res = [1920, 1080]
+    if fmri:
+        win_res = [800, 600]
+        screen=1
+    else:
+        win_res = [1920, 1080]
+        screen=0
     exp_mon = monitors.Monitor('exp_mon')
     exp_mon.setSizePix(win_res)
-    win = visual.Window(size=win_res, screen=0, allowGUI=True,
+    
+    win = visual.Window(size=win_res, screen=screen, allowGUI=True,
                         fullscr=True, monitor=exp_mon, units='height',
                         color="Black")
     return(win_res, win)
