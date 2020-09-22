@@ -188,6 +188,7 @@ def display_inst(instr_part,task,forwardKey,backKey,startKeys,instructFinish):
             endOfInstructions = True
 
     print("end of instructions, hit enter to continue")
+    logging.flush()
     instructFinish.draw()
     win.flip()
     event.waitKeys(keyList=startKeys)
@@ -318,6 +319,7 @@ event.clearEvents(eventType='keyboard')
 event.Mouse(visible=False)
 display_inst(instr_part,1,forwardKey,backKey,startKeys,instructFinish)
 print("instructions complete, continuing")
+logging.flush()
 
 # reset the non-slip timer for next routine
 routineTimer.reset()
@@ -428,11 +430,13 @@ for run in range(0, num_runs):
     # Wait for TR signal if in scanner
     if fmri:
         print("waiting for TR, or hit enter at same time as scan starts")
+        logging.flush()
         wait.draw()
         win.flip()
         event.waitKeys(keyList=startKeys)
 
-    print("starting run {run + 1} of {num_runs}")
+    print(f"starting run {run + 1} of {num_runs}")
+    logging.flush()
 
     runClock.reset()
     if run == 0:
@@ -601,6 +605,7 @@ for run in range(0, num_runs):
         else:
             exp.addData('trial.stim_duration', stim_duration)
             print(f"response: none")
+        logging.flush()
 
         reward = 0
         nudge_reward = nudge_on_run(run)
