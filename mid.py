@@ -74,14 +74,13 @@ def reward_for_range(r, nudge=False):
 
 
 ## defining some initialization functions
-
-def initialization(expName,version):
-    """Present initial dialog; initialize some parameters"""
-    # Store info about the experiment session
-
-
 def make_screen():
-    """Generates screen variables"""
+    """
+    Generates screen variables.
+    WIMR scanner screen is set to 800x600 for a different task,
+    so keep that resolution since bars on the side do not affect this.
+    """
+
     if fmri:
         win_res = [800, 600]
         screen=1
