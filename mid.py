@@ -49,14 +49,10 @@ single_speed_factor = 0.25 # how much to multiply fixations by, if doing a singl
 total_earnings = 0
 total_earnings_goal = 40
 
-reward_high = (5,7)
-reward_low = (1,3)
-loss_high = (-7,-5)
-loss_low = (-3,-1)
 
-def nudge_on_run(r):
-    # We nudge on the third run (2 when counting from 0)
-    return r == 2
+def is_final_run(r):
+    # We nudge on the last run (-1 when counting from 0)
+    return r == num_runs - 1
 
 
 # Attempt to nudge rewards in a direction
@@ -82,44 +78,6 @@ def reward_for_range(r, nudge=False):
 def initialization(expName,version):
     """Present initial dialog; initialize some parameters"""
     # Store info about the experiment session
-    expName = expName + version
-    expInfo = {
-        'participant': '9999',
-        'session': '1', 
-        'fMRI? (yes or no)': 'yes',
-        'fMRI reverse screen? (yes or no)': 'yes',
-        'outside scanner single run for staircase?': 'no',
-        'staircase start reward.low':  '15',
-        'staircase start reward.high': '15',
-        'staircase start neutral':     '15',
-        'staircase start loss.low':    '15',
-        'staircase start loss.high':   '15',
-    }
-    dlg = gui.DlgFromDict(dictionary=expInfo, title=expName)
-    if dlg.OK == False:
-        core.quit()  # user pressed cancel
-    expInfo['date'] = data.getDateStr()  # add a simple timestamp
-    expInfo['expName'] = expName
-    sn = int(expInfo['participant'])
-    session = int(expInfo['participant'])
-
-    # Check for various experimental handles
-    if expInfo['fMRI? (yes or no)'].lower() == 'yes':
-        fmri = True
-    else:
-        fmri = False
-
-    if expInfo['fMRI reverse screen? (yes or no)'].lower() == 'yes':
-        flipHoriz = True
-    else:
-        flipHoriz = False
-
-    if expInfo['outside scanner single run for staircase?'].lower() == 'yes':
-        single = True
-    else:
-        single = False
-
-    return(expInfo,expName,sn,session,fmri,single,flipHoriz)
 
 
 def make_screen():
@@ -199,8 +157,61 @@ def display_inst(instr_part,task,forwardKey,backKey,startKeys,instructFinish):
 _thisDir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(_thisDir)
 
-# present initialization dialog
-[expInfo,expName,sn,session,fmri,single,flipHoriz] = initialization(expName,version)
+# INITIALIZATION
+expName = expName + version
+expInfo = {
+    'participant': '9999',
+    'session': '1', 
+    'fMRI? (yes or no)': 'yes',
+    'fMRI reverse screen? (yes or no)': 'yes',
+    'use ranged rewards?': 'no',
+    'use nudge for final run?': 'no',
+    'do single run to initialize staircases?': 'no',
+    'staircase start reward.low':  '15',
+    'staircase start reward.high': '15',
+    'staircase start neutral':     '15',
+    'staircase start loss.low':    '15',
+    'staircase start loss.high':   '15',
+}
+dlg = gui.DlgFromDict(dictionary=expInfo, title=expName)
+if dlg.OK == False:
+    core.quit()  # user pressed cancel
+expInfo['date'] = data.getDateStr()  # add a simple timestamp
+expInfo['expName'] = expName
+sn = int(expInfo['participant'])
+session = int(expInfo['participant'])
+
+# Check for various experimental handles
+if expInfo['fMRI? (yes or no)'].lower() == 'yes':
+    fmri = True
+else:
+    fmri = False
+
+if expInfo['fMRI reverse screen? (yes or no)'].lower() == 'yes':
+    flipHoriz = True
+else:
+    flipHoriz = False
+
+if expInfo['do single run to initialize staircases?'].lower() == 'yes':
+    single = True
+else:
+    single = False
+
+if expInfo['use ranged rewards?'].lower() == 'yes':
+    reward_high = (5,7)
+    reward_low = (1,3)
+    loss_high = (-7,-5)
+    loss_low = (-3,-1)
+else:
+    reward_high = (7,7)
+    reward_low = (1,1)
+    loss_high = (-7,-7)
+    loss_low = (-1,-1)
+
+if expInfo['use nudge for final run?'].lower() == 'yes':
+    nudge_final_run = True
+else:
+    nudge_final_run = False
 
 # Data file name creation; later add .psyexp, .csv, .log, etc
 filename = start_datafiles(_thisDir, expName, expInfo, data_dir, sn, fmri)
@@ -604,26 +615,28 @@ for run in range(0, num_runs):
             print(f"response: {target_response.rt}")
         else:
             exp.addData('trial.stim_duration', stim_duration)
-            print(f"response: none")
+            print(f"response: none during stim")
         logging.flush()
 
         reward = 0
-        nudge_reward = nudge_on_run(run)
-        exp.addData('trial.nudge_reward', nudge_reward)
+        should_nudge = nudge_final_run and is_final_run(run)
+
+        print(f"nudge final run: {nudge_final_run} should nudge: {should_nudge}")
+        exp.addData('trial.should_nudge', should_nudge)
 
         # update trial components
         if trial_type == 'reward.high':
             if trial_response:
-                reward = reward_for_range(reward_high, nudge_reward)
+                reward = reward_for_range(reward_high, should_nudge)
         elif trial_type == 'reward.low':
             if trial_response:
-                reward = reward_for_range(reward_low, nudge_reward)
+                reward = reward_for_range(reward_low, should_nudge)
         elif trial_type == 'loss.high':
             if not trial_response:
-                reward = reward_for_range(loss_high, nudge_reward)
+                reward = reward_for_range(loss_high, should_nudge)
         elif trial_type == 'loss.low':
             if not trial_response:
-                reward = reward_for_range(loss_low, nudge_reward)
+                reward = reward_for_range(loss_low, should_nudge)
 
         exp.addData('trial.reward', reward)
         total_earnings += reward
