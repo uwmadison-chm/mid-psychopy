@@ -247,14 +247,13 @@ startKeys = ["enter","equal","return"]
 expKeys = ["1","2","3","4","5","6","7","8","9"]
 escapeKeys = ["escape", "esc"]
 
-if fmri:
-    instructFirstText = f"Press button 2 to continue."
-    instructMoveText = f"Press button 2 to continue, or button 1 to go back."
-    inst_file = ["instructions_MID.txt"]
-else:
-    instructFirstText = f"Press {forwardKey} to continue."
-    instructMoveText = f"Press {forwardKey} to continue, or {backKey} to go back."
+instructFirstText = f"Press button {forwardKey} to continue."
+instructMoveText = f"Press button {forwardKey} to continue, or button {backKey} to go back."
+
+if single:
     inst_file = ["instructions_MID_practice.txt"]
+else:
+    inst_file = ["instructions_MID.txt"]
 
 instructFirst = visual.TextStim(win, text=instructFirstText, height=fontH, color=text_color, pos=[0, -yScr/4], flipHoriz=flipHoriz)
 instructMove = visual.TextStim(win, text=instructMoveText, height=fontH, color=text_color, pos=[0, -yScr/4], flipHoriz=flipHoriz)
