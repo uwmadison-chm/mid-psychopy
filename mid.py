@@ -244,7 +244,7 @@ random.seed(sn * (session + 1000))
 forwardKey = "2"
 backKey = "1"
 startKeys = ["enter","equal","return"]
-expKeys = ["1","2","3","4","5","6","7","8","9","space"]
+expKeys = ["1","2","3","4","5","6","7","8","9"]
 escapeKeys = ["escape", "esc"]
 
 if fmri:
@@ -281,7 +281,7 @@ instructPrompt = visual.TextStim(win=win, font='Arial', pos=(0, yScr/10), height
 if fmri:
     endInstructions = "When you are ready to begin the task, place your finger on any button and notify the experimenter."
 else:
-    endInstructions = "When you are ready to begin the task, place your fingers on the space bar and hit Enter to begin."
+    endInstructions = "When you are ready to begin the task, place your finger on any button and hit Enter to begin."
 
 instructFinish = visual.TextStim(win, text=endInstructions,
                                      height=fontH, color=text_color, pos=[0, 0], wrapWidth=wrapW, flipHoriz=flipHoriz)
