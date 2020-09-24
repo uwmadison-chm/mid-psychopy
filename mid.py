@@ -31,7 +31,8 @@ version = "1.0"
 data_dir = "data" # location of outputs to be generated; includes data for participants as well as trial selection and trial presentation sequence
 inst_dir = "text" # location of instructions directory
 
-num_runs = 3
+# Four runs, first is the practice/calibration one
+num_runs = 4
 # Trials per run
 num_trials = 30
 
@@ -43,7 +44,7 @@ cue_time = 2.0 # how long the cue is displayed (in seconds)
 feedback_time = 2.0 # how long the trial + total reward feedback is displayed (in seconds)
 closing_fix_dur = 18.0 # added time to make sure haemodynamic responses of the last trials are properly modeled
 
-single_speed_factor = 0.25 # how much to multiply fixations by, if doing a single staircase-stabilizing run, to speed it up
+single_speed_factor = 0.25 # how much to multiply fixations by, if doing a practice/staircase-stabilizing run, to speed it up
 
 
 total_earnings = 0
@@ -51,11 +52,11 @@ total_earnings_goal = 40
 
 
 def is_final_run(r):
-    # We nudge on the last run (-1 when counting from 0)
+    # We optionally nudge on the last run (-1 when counting from 0)
     return r == num_runs - 1
 
-
-# Attempt to nudge rewards in a direction
+# Attempt to nudge rewards in a direction?
+# Note that both "range" and "nudge" are optional in the initialization screen
 def reward_for_range(r, nudge=False):
     if not nudge:
         items = list(range(r[0], r[1]+1))
@@ -119,15 +120,18 @@ def start_datafiles(_thisDir, expName, expInfo, data_dir, sn, fmri):
     filename = _thisDir + os.sep + data_dir + os.sep + fname
     return(filename)
 
-def display_inst(instr_part,task,forwardKey,backKey,startKeys,instructFinish):
-    """ display instructions
-    instr_part: instructions extracted from text
-    task: task serial numbe"""
+def display_instructions_file(inst_file):
+    instructions = []
+    inname = _thisDir + os.sep + inst_dir + os.sep + inst_file
+    infile = open(inname, 'r')
+    for line in infile:
+        instructions.append(line.rstrip())
+
     endOfInstructions = False
     instructLine = 0
-    inst = instr_part[task-1]
+
     while not endOfInstructions:
-        instructPrompt.setText(inst[instructLine])
+        instructPrompt.setText(instructions[instructLine])
         instructPrompt.draw()
         if instructLine == 0:
             instructFirst.draw()
@@ -137,18 +141,14 @@ def display_inst(instr_part,task,forwardKey,backKey,startKeys,instructFinish):
             instructMove.draw()
             win.flip()
             instructRep = event.waitKeys(keyList=[forwardKey, backKey])
+
         if instructRep[0] == backKey:
             instructLine -= 1
         elif instructRep[0] == forwardKey:
             instructLine += 1
-        if inst[instructLine] == "end":
+        if instructLine >= len(instructions):
             endOfInstructions = True
 
-    print("end of instructions, hit enter to continue")
-    logging.flush()
-    instructFinish.draw()
-    win.flip()
-    event.waitKeys(keyList=startKeys)
 
 ### START SET UP OF STUDY
 
@@ -161,11 +161,12 @@ expName = expName + version
 expInfo = {
     'participant': '9999',
     'session': '1', 
-    'fMRI? (yes or no)': 'yes',
-    'fMRI reverse screen? (yes or no)': 'yes',
+    'fMRI? (yes or no)': 'no',
+    'fMRI reverse screen? (yes or no)': 'no',
     'use ranged rewards?': 'no',
     'use nudge for final run?': 'no',
-    'do single run to initialize staircases?': 'no',
+    'do only a single behavioral practice run?': 'no',
+    'start run (0-3)': '0',
     'staircase start reward.low':  '15',
     'staircase start reward.high': '15',
     'staircase start neutral':     '15',
@@ -191,10 +192,12 @@ if expInfo['fMRI reverse screen? (yes or no)'].lower() == 'yes':
 else:
     flipHoriz = False
 
-if expInfo['do single run to initialize staircases?'].lower() == 'yes':
+if expInfo['do only a single behavioral practice run?'].lower() == 'yes':
     single = True
 else:
     single = False
+
+start_run = int(expInfo['start run (0-3)'])
 
 if expInfo['use ranged rewards?'].lower() == 'yes':
     reward_high = (5,7)
@@ -250,24 +253,9 @@ escapeKeys = ["escape", "esc"]
 instructFirstText = f"Press button {forwardKey} to continue."
 instructMoveText = f"Press button {forwardKey} to continue, or button {backKey} to go back."
 
-if single:
-    inst_file = ["instructions_MID_practice.txt"]
-else:
-    inst_file = ["instructions_MID.txt"]
-
 instructFirst = visual.TextStim(win, text=instructFirstText, height=fontH, color=text_color, pos=[0, -yScr/4], flipHoriz=flipHoriz)
 instructMove = visual.TextStim(win, text=instructMoveText, height=fontH, color=text_color, pos=[0, -yScr/4], flipHoriz=flipHoriz)
 
-
-# import instructions
-instr_part = [[],[],[]]
-for inst in range (0,len(inst_file)):
-    inname = _thisDir + os.sep + inst_dir + os.sep + inst_file[inst]
-    infile = open(inname, 'r')
-    for line in infile:
-        instr_part[inst].append(line.rstrip())
-    instr_part[inst].append("end")
-    infile.close()
 
 ## START component code to be run before the window creation
 
@@ -326,7 +314,20 @@ routineTimer = core.CountdownTimer()  # to track time remaining of each (non-sli
 # keyboard checking is just starting
 event.clearEvents(eventType='keyboard')
 event.Mouse(visible=False)
-display_inst(instr_part,1,forwardKey,backKey,startKeys,instructFinish)
+
+if fmri:
+    inst_file = "scanner_practice.txt"
+else:
+    inst_file = "outofscanner_practice.txt"
+
+display_instructions_file(inst_file)
+
+print("end of instructions, hit enter to continue")
+logging.flush()
+instructFinish.draw()
+win.flip()
+event.waitKeys(keyList=startKeys)
+
 print("instructions complete, continuing")
 logging.flush()
 
@@ -351,11 +352,11 @@ order_files = random.sample(orders, 3)
 if single:
     # Single mode to get the staircase numbers for the scanner run
     num_runs = 1
+
+if start_run == 0:
     stepSizes = [6, 3, 3, 2, 2, 1, 1]
 else:
-    # Scanner run, needs less adjustment
     stepSizes = [2, 2, 1, 1]
-
 
 def make_stairs(nTrials, startVal=15.0):
     return data.StairHandler(startVal=startVal,
@@ -427,8 +428,9 @@ trial_number = 0
 def speed_up(duration):
     return float(duration) * single_speed_factor
 
+
 # Loop the rest of this for num_runs
-for run in range(0, num_runs):
+for run in range(start_run, num_runs):
     order_file = order_files[run]
     order = csv.DictReader(open(order_file))
     order = list(order)
@@ -458,7 +460,7 @@ for run in range(0, num_runs):
         print(f"actual start {globalClock.getTime()}")
 
     # present initial fixation
-    if single:
+    if run == 0:
         initial_fix_duration = speed_up(initial_fix_duration)
     show_fixation(initial_fix_duration)
 
@@ -509,7 +511,7 @@ for run in range(0, num_runs):
             print('time after cue: ', trialClock.getTime())
 
         fix_after_cue = trial_details['fix.after.cue']
-        if single:
+        if run == 0:
             fix_after_cue = speed_up(fix_after_cue)
         too_fast_rt = show_fixation(fix_after_cue)
         if too_fast_rt:
@@ -643,7 +645,7 @@ for run in range(0, num_runs):
 
         # Fixation after stim target
         fix_after_stim = trial_details['fix.after.stim']
-        if single:
+        if run == 0:
             fix_after_stim = speed_up(fix_after_stim)
         too_slow_rt = show_fixation(fix_after_stim)
         if too_slow_rt:
@@ -732,7 +734,7 @@ for run in range(0, num_runs):
         if rt:
             difference_between_rt_and_original = max_target_dur - rt
             fix_after_feedback_adjusted += difference_between_rt_and_original
-        if single:
+        if run == 0:
             fix_after_feedback_adjusted = speed_up(fix_after_feedback_adjusted)
         show_fixation(fix_after_feedback_adjusted)
 
@@ -756,11 +758,17 @@ for run in range(0, num_runs):
 
     # completed run
     # present ending fixation (to allow for better evaluation of the last experimental TRs)
-    if fmri and not single:
+    if fmri and not run == 0:
         show_fixation(closing_fix_dur)
 
-    # If we are NOT on the last run, show the break messages
-    if run < num_runs - 1:
+    if single:
+        print("Run complete")
+    elif run == 0:
+        # If done with the practice run, show the post-practice stuff
+        display_instructions_file("scanner_postpractice.txt")
+        total_earnings = 0
+    elif run < num_runs - 1:
+        # If we are still going and NOT on the last run, show the break messages
         show_stim(breakPrompt, 2)
         show_stim(None, 26)
         show_stim(breakEnd, 2)

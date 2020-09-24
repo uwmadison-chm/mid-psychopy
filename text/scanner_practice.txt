@@ -1,0 +1,8 @@
+In this task, you will win money if you are quick enough.
+Your task is to press a button as soon as you see the white square. The white square will appear on the screen for only a fraction of a second, so you will need to respond very quickly.
+When the white square is preceded by a circle, you will WIN money if you press the button WHILE the white square is on the screen. A circle with one line means you can win $1. A circle with two lines means you can win $7.
+When the white square is preceded by a square, you will LOSE money if you fail to press the button while the white square is on the screen. A square with one line means you can lose $1 and a square with two lines means you can lose $7.
+When the white square is preceded by a triangle, you are not able to win or lose any money, but you should still press the button as quickly as possible, while the white square is on the screen.
+If you press a button anytime before or after the white square is on the screen, you will fail that trial.
+After each trial, you will see the amount of money you've won or lost and the total money you've won in this task so far. If the amount won at the end of the whole task is negative, your winnings will be $0, but you won't owe anything.
+If you have questions or are unsure about what your task is, please ask the experimenter now.
