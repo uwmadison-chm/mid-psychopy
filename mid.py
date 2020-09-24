@@ -254,7 +254,7 @@ if fmri:
 else:
     instructFirstText = f"Press {forwardKey} to continue."
     instructMoveText = f"Press {forwardKey} to continue, or {backKey} to go back."
-    inst_file = ["instructions_MID_outside_scanner.txt"]
+    inst_file = ["instructions_MID_practice.txt"]
 
 instructFirst = visual.TextStim(win, text=instructFirstText, height=fontH, color=text_color, pos=[0, -yScr/4], flipHoriz=flipHoriz)
 instructMove = visual.TextStim(win, text=instructMoveText, height=fontH, color=text_color, pos=[0, -yScr/4], flipHoriz=flipHoriz)
