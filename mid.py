@@ -340,8 +340,8 @@ event.clearEvents(eventType='keyboard')
 
 # load a list of the possible order files
 orders = list(Path(os.path.join(_thisDir, "orders")).glob("*.csv"))
-# pick 3 random trial orders without replacement
-order_files = random.sample(orders, 3)
+# pick random trial orders without replacement
+order_files = random.sample(orders, 4)
     
 # create the staircase handlers to adjust for individual threshold
 # (stairs defined in units of screen frames; actual minimum presentation
