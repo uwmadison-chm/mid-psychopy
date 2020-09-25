@@ -315,10 +315,10 @@ routineTimer = core.CountdownTimer()  # to track time remaining of each (non-sli
 event.clearEvents(eventType='keyboard')
 event.Mouse(visible=False)
 
-if fmri:
-    inst_file = "scanner_practice.txt"
-else:
+if single:
     inst_file = "outofscanner_practice.txt"
+else:
+    inst_file = "scanner_practice.txt"
 
 display_instructions_file(inst_file)
 
