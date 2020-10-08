@@ -51,6 +51,16 @@ total_earnings = 0
 total_earnings_goal = 40
 
 
+# accepted inputs
+forwardKey = "2"
+backKey = "1"
+startKeys = ["enter","equal","return"]
+ttlKey = "5"
+expKeys = ["1","2","3","4"]
+escapeKeys = ["escape", "esc"]
+
+
+
 def is_final_run(r):
     # We optionally nudge on the last run (-1 when counting from 0)
     return r == num_runs - 1
@@ -161,8 +171,9 @@ expName = expName + version
 expInfo = {
     'participant': '9999',
     'session': '1', 
-    'fMRI? (yes or no)': 'no',
-    'fMRI reverse screen? (yes or no)': 'no',
+    'fMRI? (yes or no)': 'yes',
+    'fMRI trigger on TTL? (yes or no)': 'yes',
+    'fMRI reverse screen? (yes or no)': 'yes',
     'use ranged rewards?': 'no',
     'use nudge for final run?': 'no',
     'do only a single behavioral practice run?': 'no',
@@ -186,6 +197,11 @@ if expInfo['fMRI? (yes or no)'].lower() == 'yes':
     fmri = True
 else:
     fmri = False
+
+if expInfo['fMRI trigger on TTL? (yes or no)'].lower() == 'yes':
+    triggerOnTTL = True
+else:
+    triggerOnTTL = False
 
 if expInfo['fMRI reverse screen? (yes or no)'].lower() == 'yes':
     flipHoriz = True
@@ -242,13 +258,6 @@ else:
 
 # set random seed - participant and session dependent
 random.seed(sn * (session + 1000))
-
-# determine accepted inputs
-forwardKey = "2"
-backKey = "1"
-startKeys = ["enter","equal","return"]
-expKeys = ["1","2","3","4","5","6","7","8","9"]
-escapeKeys = ["escape", "esc"]
 
 instructFirstText = f"Press button {forwardKey} to continue."
 instructMoveText = f"Press button {forwardKey} to continue, or button {backKey} to go back."
@@ -439,12 +448,20 @@ for run in range(start_run, num_runs):
         print(f'order_file is {order_file}')
 
     # Wait for TR signal if in scanner
-    if fmri:
-        print("waiting for TR, or hit enter at same time as scan starts")
+    if triggerOnTTL:
+        print(f"waiting for TTL key {ttlKey} on TR")
+        logging.flush()
+        wait.draw()
+        win.flip()
+        event.waitKeys(keyList=ttlKey)
+
+    elif fmri:
+        print(f"waiting for ready, hit {startKeys} at same time as scan starts")
         logging.flush()
         wait.draw()
         win.flip()
         event.waitKeys(keyList=startKeys)
+
 
     print(f"starting run {run + 1} of {num_runs}")
     logging.flush()
@@ -620,8 +637,6 @@ for run in range(start_run, num_runs):
 
         reward = 0
         should_nudge = nudge_final_run and is_final_run(run)
-
-        print(f"nudge final run: {nudge_final_run} should nudge: {should_nudge}")
         exp.addData('trial.should_nudge', should_nudge)
 
         # update trial components
