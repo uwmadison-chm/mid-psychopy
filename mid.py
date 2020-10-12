@@ -190,7 +190,7 @@ if dlg.OK == False:
 expInfo['date'] = data.getDateStr()  # add a simple timestamp
 expInfo['expName'] = expName
 sn = int(expInfo['participant'])
-session = int(expInfo['participant'])
+session = int(expInfo['session'])
 
 # Check for various experimental handles
 if expInfo['fMRI? (yes or no)'].lower() == 'yes':
@@ -447,6 +447,13 @@ for run in range(start_run, num_runs):
     if DEBUG:
         print(f'order_file is {order_file}')
 
+    if fmri:
+        print(f"waiting for ready, hit {startKeys} after prep scan")
+        logging.flush()
+        wait.draw()
+        win.flip()
+        event.waitKeys(keyList=startKeys)
+
     # Wait for TR signal if in scanner
     if triggerOnTTL:
         print(f"waiting for TTL key {ttlKey} on TR")
@@ -455,12 +462,6 @@ for run in range(start_run, num_runs):
         win.flip()
         event.waitKeys(keyList=ttlKey)
 
-    elif fmri:
-        print(f"waiting for ready, hit {startKeys} at same time as scan starts")
-        logging.flush()
-        wait.draw()
-        win.flip()
-        event.waitKeys(keyList=startKeys)
 
 
     print(f"starting run {run + 1} of {num_runs}")
@@ -761,6 +762,8 @@ for run in range(start_run, num_runs):
         exp.addData('time.trial', trialClock.getTime())
         exp.addData('time.run', runClock.getTime())
         exp.addData('time.global', globalClock.getTime())
+        exp.addData('subid', sn)
+        exp.addData('session', session)
         def add_detail(x):
             exp.addData(x, trial_details[x])
         add_detail('trial.type')
