@@ -37,6 +37,7 @@ num_runs = 4
 num_trials = 30
 
 
+pre_instructions_duration = 60 # added time before instructions to acclimate to scanner
 initial_fix_duration = 8 # added time to make sure homogenicity of magnetic field is reached
 min_target_dur = 0.1 # sets the minimum presentation time for target (in seconds)
 max_target_dur = 0.5 # maximum presentation of target (in seconds)
@@ -272,6 +273,11 @@ instructMove = visual.TextStim(win, text=instructMoveText, height=fontH, color=t
 fix = visual.TextStim(win, pos=[0, 0], text='+', height=fontH*2, color=text_color, flipHoriz=flipHoriz)
 clock = core.Clock()
 
+
+# Pre-instructions
+instructPre = visual.TextStim(win, text="Please wait.\n\nThe task instructions will begin soon.",
+                                     height=fontH, color=text_color, pos=[0, 0], wrapWidth=wrapW, flipHoriz=flipHoriz)
+
 # Initialize components for Routine "instructions"
 instructPrompt = visual.TextStim(win=win, font='Arial', pos=(0, yScr/10), height=fontH, wrapWidth=wrapW, color=text_color, flipHoriz=flipHoriz);
 if fmri:
@@ -318,40 +324,6 @@ runClock = core.Clock()  # to track the time since experiment started
 trialClock = core.Clock()  # to track the time since trial started
 routineTimer = core.CountdownTimer()  # to track time remaining of each (non-slip) routine
 
-## Displaying Instructions
-
-# keyboard checking is just starting
-event.clearEvents(eventType='keyboard')
-event.Mouse(visible=False)
-
-if single:
-    inst_file = "outofscanner_practice.txt"
-else:
-    inst_file = "scanner_practice.txt"
-
-display_instructions_file(inst_file)
-
-print("end of instructions, hit enter to continue")
-logging.flush()
-instructFinish.draw()
-win.flip()
-event.waitKeys(keyList=startKeys)
-
-print("instructions complete, continuing")
-logging.flush()
-
-# reset the non-slip timer for next routine
-routineTimer.reset()
-event.clearEvents(eventType='keyboard')
-
-
-### PREP EXPERIMENTAL LOOP
-
-# load a list of the possible order files
-orders = list(Path(os.path.join(_thisDir, "orders")).glob("*.csv"))
-# pick random trial orders without replacement
-order_files = random.sample(orders, 4)
-    
 # create the staircase handlers to adjust for individual threshold
 # (stairs defined in units of screen frames; actual minimum presentation
 # duration is determined by the min_target_dur parameter, the staircase 
@@ -387,6 +359,9 @@ stairs = {
     'reward.low':  make_stairs(perStim,     int(expInfo['staircase start reward.low'])),
     }
 staircase_end = {}
+
+
+## Useful functions
 
 def get_keypress():
     keys = event.getKeys()
@@ -425,10 +400,47 @@ def show_stim(stim, duration):
             stim.draw()
         win.flip()
     return rt
-        
 
 def show_fixation(duration):
     return show_stim(fix, duration)
+
+
+## Displaying Instructions
+
+# keyboard checking is just starting
+event.clearEvents(eventType='keyboard')
+event.Mouse(visible=False)
+
+if single:
+    inst_file = "outofscanner_practice.txt"
+else:
+    inst_file = "scanner_practice.txt"
+
+if fmri:
+    show_stim(instructPre, pre_instructions_duration)
+
+display_instructions_file(inst_file)
+
+print("end of instructions, hit enter to continue")
+logging.flush()
+instructFinish.draw()
+win.flip()
+event.waitKeys(keyList=startKeys)
+
+print("instructions complete, continuing")
+logging.flush()
+
+# reset the non-slip timer for next routine
+routineTimer.reset()
+event.clearEvents(eventType='keyboard')
+
+
+### PREP EXPERIMENTAL LOOP
+
+# load a list of the possible order files
+orders = list(Path(os.path.join(_thisDir, "orders")).glob("*.csv"))
+# pick random trial orders without replacement
+order_files = random.sample(orders, 4)
 
 
 # EXPERIMENT BEGINS
