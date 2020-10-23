@@ -43,7 +43,7 @@ min_target_dur = 0.1 # sets the minimum presentation time for target (in seconds
 max_target_dur = 0.5 # maximum presentation of target (in seconds)
 cue_time = 2.0 # how long the cue is displayed (in seconds)
 feedback_time = 2.0 # how long the trial + total reward feedback is displayed (in seconds)
-closing_fix_dur = 18.0 # added time to make sure haemodynamic responses of the last trials are properly modeled
+closing_duration = 8.0 # added time at end of last run to make sure we capture enough
 
 single_speed_factor = 0.25 # how much to multiply fixations by, if doing a practice/staircase-stabilizing run, to speed it up
 
@@ -786,11 +786,6 @@ for run in range(start_run, num_runs):
         # advance to next trial/line in logFile
         exp.nextEntry()
 
-    # completed run
-    # present ending fixation (to allow for better evaluation of the last experimental TRs)
-    if fmri and not run == 0:
-        show_fixation(closing_fix_dur)
-
     if single:
         print("Run complete")
     elif run == 0:
@@ -802,6 +797,9 @@ for run in range(start_run, num_runs):
         show_stim(breakPrompt, 2)
         show_stim(None, 26)
         show_stim(breakEnd, 2)
+    else:
+        # We are on the last run
+        show_stim(None, closing_duration)
 
 
 # completed experimental phase
