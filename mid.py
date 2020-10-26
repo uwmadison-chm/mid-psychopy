@@ -776,6 +776,7 @@ for run in range(start_run, num_runs):
         exp.addData('time.global', globalClock.getTime())
         exp.addData('subid', sn)
         exp.addData('session', session)
+        exp.addData('run', run)
         def add_detail(x):
             exp.addData(x, trial_details[x])
         add_detail('trial.type')
